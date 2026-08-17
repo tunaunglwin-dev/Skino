@@ -1,0 +1,41 @@
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+.codex/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Node/Vue
+node_modules/
+dist/
+
+# Laravel
+backend-laravel/vendor/
+backend-laravel/node_modules/
+backend-laravel/storage/*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Flutter
+mobile-flutter/.dart-home/
+mobile-flutter/.dart_tool/
+mobile-flutter/build/
+mobile-flutter/.flutter-plugins
+mobile-flutter/.flutter-plugins-dependencies
+
+# Data/model artifacts
+datasets/**
+!datasets/.gitkeep
+models/**
+!models/.gitkeep
+
+# Local/generated working artifacts
+pptx_work/
