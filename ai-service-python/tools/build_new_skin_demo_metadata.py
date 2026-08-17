@@ -7,6 +7,7 @@ from pathlib import Path
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
 SKIN_TYPE_LABELS = {
+    "combination": ("combination", ""),
     "normal": ("normal", ""),
     "dry": ("dry", "dryness"),
     "oily": ("oily", "oiliness"),
@@ -44,7 +45,34 @@ def main() -> None:
 
 
 def build_skin_type_rows(raw_dir: Path) -> list[dict[str, str]]:
-    dataset_dir = raw_dir / "normal, dry, oil" / "Oily-Dry-Skin-Types"
+    rows: list[dict[str, str]] = []
+
+    dataset_sources = [
+        (
+            raw_dir / "normal, dry, oil" / "Oily-Dry-Skin-Types",
+            "oily_dry_normal_skin_types",
+            "dataset_license_unspecified",
+        ),
+        (
+            raw_dir / "combation and redenss" / "skin_type_classification_dataset",
+            "facial_skin_type_classification_dataset",
+            "dataset_license_unspecified",
+        ),
+    ]
+
+    for dataset_dir, source, license_note in dataset_sources:
+        if dataset_dir.exists():
+            rows.extend(build_skin_type_dataset_rows(raw_dir, dataset_dir, source, license_note))
+
+    return rows
+
+
+def build_skin_type_dataset_rows(
+    raw_dir: Path,
+    dataset_dir: Path,
+    source: str,
+    license_note: str,
+) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
 
     for split_dir in sorted(path for path in dataset_dir.iterdir() if path.is_dir()):
@@ -66,8 +94,8 @@ def build_skin_type_rows(raw_dir: Path) -> list[dict[str, str]]:
                         split,
                         skin_type,
                         concern,
-                        "oily_dry_normal_skin_types",
-                        "dataset_license_unspecified",
+                        source,
+                        license_note,
                         "research_dataset",
                         "none",
                         label,

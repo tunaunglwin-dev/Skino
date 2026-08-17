@@ -25,8 +25,8 @@ def main() -> None:
         "skin_model": str(skin_model_path),
         "concern_model": str(concern_model_path),
         "warning": (
-            "Demo nearest-centroid model. Skin typing is trained for normal/dry/oily only; "
-            "combination is missing and sensitive/redness has very low sample count."
+            "Demo nearest-centroid model. Skin typing is trained for normal/dry/oily/combination; "
+            "sensitive/redness has very low sample count."
         ),
         "skin_metadata": skin_model.get("metadata", {}),
         "concern_metadata": concern_model.get("metadata", {}),
