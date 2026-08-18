@@ -939,7 +939,11 @@ class _PlanPreviewCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF7EE),
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFF0E4), Color(0xFFFFFBF7)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: const Color(0xFFFFD8BA)),
         boxShadow: const [
@@ -953,10 +957,10 @@ class _PlanPreviewCard extends StatelessWidget {
       child: Row(
         children: [
           const SkinoImageIcon(
-            asset: SkinoAssets.logo,
-            size: 70,
+            asset: SkinoAssets.littleGuyFlying,
+            size: 76,
             padding: 0,
-            backgroundColor: Colors.white,
+            backgroundColor: Colors.transparent,
             borderRadius: 22,
           ),
           const SizedBox(width: 14),
@@ -975,8 +979,8 @@ class _PlanPreviewCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   text.isMyanmar
-                      ? 'Trial, scan packs, premium demo pricing'
-                      : 'Trial, scan packs, and premium demo pricing',
+                      ? 'Trial, scan packs, premium care'
+                      : 'Trial, scan packs, premium care',
                   style: const TextStyle(
                     color: Color(0xFF75685E),
                     fontWeight: FontWeight.w700,
@@ -1027,7 +1031,9 @@ class _PlansPage extends StatelessWidget {
       body: _PageScaffold(
         children: [
           _PlansHero(text: text),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          _PlanStoryStrip(text: text),
+          const SizedBox(height: 18),
           _TrialPlanCard(text: text),
           const SizedBox(height: 20),
           _PlanSectionTitle(
@@ -1044,6 +1050,7 @@ class _PlansPage extends StatelessWidget {
             price: '3,000 MMK',
             color: const Color(0xFF4FA23C),
             icon: Icons.shield_rounded,
+            mascotAsset: SkinoAssets.littleGuyCare,
             features: const [
               '5 face scans',
               'Valid for 7 days',
@@ -1060,6 +1067,7 @@ class _PlansPage extends StatelessWidget {
             price: '8,000 MMK',
             color: const Color(0xFFF98128),
             icon: Icons.local_fire_department_rounded,
+            mascotAsset: SkinoAssets.littleGuyOk,
             features: const [
               '12 face scans',
               'Valid for 14 days',
@@ -1075,6 +1083,7 @@ class _PlansPage extends StatelessWidget {
             price: '10,000 MMK',
             color: const Color(0xFF8B3FD1),
             icon: Icons.workspace_premium_rounded,
+            mascotAsset: SkinoAssets.littleGuyFlying,
             features: const [
               'Unlimited face scans',
               'Valid for 30 days',
@@ -1121,15 +1130,22 @@ class _PlansHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(18, 18, 12, 16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFFF2E6), Color(0xFFEAF7F1)],
+          colors: [Color(0xFFFFEFE3), Color(0xFFFFFAF4), Color(0xFFEAF7F1)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(color: const Color(0xFFFFD8BA)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x18F98128),
+            blurRadius: 26,
+            offset: Offset(0, 16),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -1141,7 +1157,7 @@ class _PlansHero extends StatelessWidget {
                   text.isMyanmar ? 'Choose Your Plan' : 'Choose Your Plan',
                   style: const TextStyle(
                     color: Color(0xFF2D1E16),
-                    fontSize: 30,
+                    fontSize: 29,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1156,16 +1172,137 @@ class _PlansHero extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                   ),
                 ),
+                const SizedBox(height: 14),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: const [
+                    _PlanFeatureChip(
+                      label: 'Demo pricing',
+                      color: Color(0xFFF98128),
+                    ),
+                    _PlanFeatureChip(
+                      label: 'Scan credits',
+                      color: Color(0xFF3B8F65),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           const SkinoImageIcon(
-            asset: SkinoAssets.logo,
-            size: 92,
+            asset: SkinoAssets.littleGuyWave,
+            size: 112,
             padding: 0,
-            backgroundColor: Colors.white,
-            borderRadius: 30,
+            backgroundColor: Colors.transparent,
+            borderRadius: 32,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanStoryStrip extends StatelessWidget {
+  const _PlanStoryStrip({required this.text});
+
+  final SkinoText text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _PlanStoryPill(
+            asset: SkinoAssets.iconScan,
+            title: 'Scan',
+            caption: text.isMyanmar ? 'Face analysis' : 'Face analysis',
+            color: const Color(0xFFF98128),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _PlanStoryPill(
+            asset: SkinoAssets.iconRoutine,
+            title: 'Care',
+            caption: text.isMyanmar ? 'Routine guide' : 'Routine guide',
+            color: const Color(0xFF3B8F65),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _PlanStoryPill(
+            asset: SkinoAssets.iconChat,
+            title: 'Buddy',
+            caption: text.isMyanmar ? 'AI support' : 'AI support',
+            color: const Color(0xFF8B3FD1),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PlanStoryPill extends StatelessWidget {
+  const _PlanStoryPill({
+    required this.asset,
+    required this.title,
+    required this.caption,
+    required this.color,
+  });
+
+  final String asset;
+  final String title;
+  final String caption;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D4B2F1F),
+            blurRadius: 14,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          SkinoImageIcon(
+            asset: asset,
+            size: 34,
+            padding: 3,
+            backgroundColor: color.withValues(alpha: 0.1),
+            borderRadius: 12,
+          ),
+          const SizedBox(height: 7),
+          Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            caption,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFF7B7067),
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -1249,11 +1386,11 @@ class _TrialPlanCard extends StatelessWidget {
               Row(
                 children: [
                   const SkinoImageIcon(
-                    asset: SkinoAssets.iconScan,
-                    size: 78,
-                    padding: 8,
-                    backgroundColor: Color(0xFFFFF2E6),
-                    borderRadius: 24,
+                    asset: SkinoAssets.littleGuyMagnifier,
+                    size: 96,
+                    padding: 0,
+                    backgroundColor: Colors.transparent,
+                    borderRadius: 28,
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -1281,12 +1418,25 @@ class _TrialPlanCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    '0 MMK',
-                    style: TextStyle(
-                      color: Color(0xFFF05A13),
-                      fontSize: 26,
-                      fontWeight: FontWeight.w900,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEFE3),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFFFD6B8)),
+                    ),
+                    child: const Text(
+                      '0\nMMK',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFF05A13),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        height: 1.02,
+                      ),
                     ),
                   ),
                 ],
@@ -1338,6 +1488,7 @@ class _PlanCard extends StatelessWidget {
     required this.price,
     required this.color,
     required this.icon,
+    required this.mascotAsset,
     required this.features,
     required this.buttonLabel,
     required this.onChoose,
@@ -1349,6 +1500,7 @@ class _PlanCard extends StatelessWidget {
   final String price;
   final Color color;
   final IconData icon;
+  final String mascotAsset;
   final List<String> features;
   final String buttonLabel;
   final VoidCallback onChoose;
@@ -1359,8 +1511,12 @@ class _PlanCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
+        gradient: LinearGradient(
+          colors: [Colors.white, color.withValues(alpha: 0.055)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(26),
         border: Border.all(color: color.withValues(alpha: 0.28), width: 1.4),
         boxShadow: const [
           BoxShadow(
@@ -1398,22 +1554,54 @@ class _PlanCard extends StatelessWidget {
             const SizedBox(height: 8),
           ],
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: color.withValues(alpha: 0.12),
+              Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: color.withValues(alpha: 0.16)),
+                ),
                 child: Icon(icon, color: color, size: 30),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Text(
-                  name,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      name == 'Premium'
+                          ? 'For your full Skino journey'
+                          : name == 'Standard'
+                          ? 'Best demo value for judging'
+                          : 'Simple start for first users',
+                      style: const TextStyle(
+                        color: Color(0xFF74685F),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
                 ),
+              ),
+              SkinoImageIcon(
+                asset: mascotAsset,
+                size: 62,
+                padding: 0,
+                backgroundColor: Colors.transparent,
+                borderRadius: 18,
               ),
             ],
           ),
@@ -1428,21 +1616,21 @@ class _PlanCard extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  scans,
+                  price,
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: color,
-                    fontSize: 22,
+                    fontSize: 28,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  price,
+                  scans,
                   textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 26,
+                  style: const TextStyle(
+                    color: Color(0xFF5D5149),
+                    fontSize: 14,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1484,17 +1672,24 @@ class _PremiumLoversCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: const Color(0xFFD7E4F7)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D2F7ECB),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Row(
             children: [
               const SkinoImageIcon(
-                asset: SkinoAssets.logo,
-                size: 62,
+                asset: SkinoAssets.littleGuyLaptop,
+                size: 82,
                 padding: 0,
-                backgroundColor: Color(0xFFFFF1E8),
-                borderRadius: 20,
+                backgroundColor: Colors.transparent,
+                borderRadius: 24,
               ),
               const SizedBox(width: 12),
               Expanded(
