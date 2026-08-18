@@ -7,6 +7,7 @@ import '../../../core/api_config.dart';
 import '../../../core/api_exception.dart';
 import '../../../core/google_auth_config.dart';
 import '../../../core/skino_assets.dart';
+import '../../../core/skino_image_icon.dart';
 import '../../auth/data/auth_api.dart';
 import '../../auth/data/session_store.dart';
 import '../../auth/models/auth_session.dart';
@@ -718,6 +719,7 @@ class _SkinoOnboarding extends StatefulWidget {
 class _SkinoOnboardingState extends State<_SkinoOnboarding> {
   final PageController _controller = PageController();
   int _page = 0;
+  bool _acceptedAiConsent = false;
 
   @override
   void dispose() {
@@ -726,7 +728,7 @@ class _SkinoOnboardingState extends State<_SkinoOnboarding> {
   }
 
   void _next() {
-    if (_page == 2) {
+    if (_page == 2 && _acceptedAiConsent) {
       widget.onFinish();
       return;
     }
@@ -739,23 +741,33 @@ class _SkinoOnboardingState extends State<_SkinoOnboarding> {
 
   @override
   Widget build(BuildContext context) {
-    final pages = const [
+    final pages = [
       _OnboardingStep(
-        icon: Icons.center_focus_strong_rounded,
-        title: 'Scan first',
-        body: 'Take a clear face scan and get a focused skin summary.',
+        asset: SkinoAssets.littleGuyWave,
+        title: 'Meet Your AI Skincare Bestie',
+        body:
+            'Skino helps you scan your face, understand visible skin concerns, and build a simple care routine.',
+      ),
+      const _OnboardingStep(
+        asset: SkinoAssets.iconScan,
+        title: 'Scan with care',
+        body:
+            'Use clear light, keep your full face visible, and treat every result as guidance, not a medical diagnosis.',
       ),
       _OnboardingStep(
-        icon: Icons.spa_outlined,
-        title: 'Read your routine',
-        body: 'Review skin score, concerns, and a simple care plan.',
-      ),
-      _OnboardingStep(
-        icon: Icons.local_hospital_outlined,
-        title: 'Ask a specialist',
-        body: 'Choose a specialist profile and send the scan to admin CRM.',
+        asset: SkinoAssets.iconReport,
+        title: 'AI Face Scan Consent',
+        body:
+            'Your face scan may reveal sensitive skin and biometric information. Skino uses it only to analyze visible skin concerns, show your result, and create care guidance. We do not sell your face scan. You control whether a logged-in scan can help improve Skino AI, and you can ask us to review or delete your data.',
+        consent: _AiConsentBox(
+          accepted: _acceptedAiConsent,
+          onChanged: (value) =>
+              setState(() => _acceptedAiConsent = value ?? false),
+        ),
       ),
     ];
+    final isLastPage = _page == pages.length - 1;
+    final canContinue = !isLastPage || _acceptedAiConsent;
 
     return Scaffold(
       backgroundColor: const Color(0xFFFBF9F4),
@@ -787,10 +799,19 @@ class _SkinoOnboardingState extends State<_SkinoOnboarding> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: widget.onFinish,
-                    child: const Text('Skip'),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Private skin AI demo',
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Color(0xFF7A7169),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -823,8 +844,8 @@ class _SkinoOnboardingState extends State<_SkinoOnboarding> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: _next,
-                  child: Text(_page == 2 ? 'Start Skino' : 'Next'),
+                  onPressed: canContinue ? _next : null,
+                  child: Text(isLastPage ? 'Agree and Start Skino' : 'Next'),
                 ),
               ),
             ],
@@ -837,58 +858,126 @@ class _SkinoOnboardingState extends State<_SkinoOnboarding> {
 
 class _OnboardingStep extends StatelessWidget {
   const _OnboardingStep({
-    required this.icon,
+    required this.asset,
     required this.title,
     required this.body,
+    this.consent,
   });
 
-  final IconData icon;
+  final String asset;
   final String title;
   final String body;
+  final Widget? consent;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          width: 148,
-          height: 148,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(32),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x14123C36),
-                blurRadius: 24,
-                offset: Offset(0, 14),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 148,
+                  height: 148,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color(0x14123C36),
+                        blurRadius: 24,
+                        offset: Offset(0, 14),
+                      ),
+                    ],
+                  ),
+                  child: Center(
+                    child: SkinoImageIcon(
+                      asset: asset,
+                      size: 104,
+                      padding: 0,
+                      backgroundColor: Colors.transparent,
+                      borderRadius: 30,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF282420),
+                    fontSize: 28,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  body,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF625B53),
+                    fontSize: 16,
+                    height: 1.42,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (consent != null) ...[const SizedBox(height: 18), consent!],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AiConsentBox extends StatelessWidget {
+  const _AiConsentBox({required this.accepted, required this.onChanged});
+
+  final bool accepted;
+  final ValueChanged<bool?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: () => onChanged(!accepted),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: accepted ? const Color(0xFFEAF6F1) : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: accepted ? const Color(0xFFBFE6D7) : const Color(0xFFFFD0B3),
+          ),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Checkbox(
+              value: accepted,
+              onChanged: onChanged,
+              activeColor: const Color(0xFF0E5C56),
+              visualDensity: VisualDensity.compact,
+            ),
+            const SizedBox(width: 6),
+            const Expanded(
+              child: Text(
+                'I understand Skino will use my face scan for AI skin analysis and care guidance. I consent to this processing and understand this demo is not medical advice.',
+                style: TextStyle(
+                  color: Color(0xFF433D37),
+                  fontSize: 13,
+                  height: 1.35,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ],
-          ),
-          child: Icon(icon, color: const Color(0xFFF98128), size: 68),
+            ),
+          ],
         ),
-        const SizedBox(height: 34),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF282420),
-            fontSize: 30,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          body,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: Color(0xFF625B53),
-            fontSize: 17,
-            height: 1.45,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
