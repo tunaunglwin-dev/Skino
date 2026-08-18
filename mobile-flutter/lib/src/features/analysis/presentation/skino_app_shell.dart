@@ -4243,6 +4243,8 @@ class _ResultPage extends StatelessWidget {
         children: [
           AnalysisResultPanel(result: result, text: text),
           const SizedBox(height: 12),
+          _SkinMapEntryCard(text: text, result: result),
+          const SizedBox(height: 12),
           _StartRoutineCard(
             text: text,
             result: result,
@@ -4252,8 +4254,6 @@ class _ResultPage extends StatelessWidget {
             onStartRoutine: onStartRoutine,
             onOpenCare: onOpenCare,
           ),
-          const SizedBox(height: 12),
-          _SkinMapEntryCard(text: text, result: result),
           const SizedBox(height: 12),
           _ScanQualityCard(text: text, result: result),
           if (activeRoutine != null &&
@@ -4592,6 +4592,10 @@ class _SkinMapEntryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final areas = _skinMapAreas(result).toList()
+      ..sort((left, right) => left.score.compareTo(right.score));
+    final priorityAreas = areas.take(3).toList();
+
     return Container(
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -4606,56 +4610,140 @@ class _SkinMapEntryCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
-          const CircleAvatar(
-            backgroundColor: Color(0xFFFFF3EC),
-            child: SkinoImageIcon(
-              asset: SkinoAssets.iconReport,
-              size: 34,
-              padding: 2,
-              backgroundColor: Colors.transparent,
-              borderRadius: 12,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  text.isMyanmar ? 'Skin map details' : 'Skin map details',
-                  style: const TextStyle(
-                    color: Color(0xFF282420),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
+          Row(
+            children: [
+              const CircleAvatar(
+                backgroundColor: Color(0xFFFFF3EC),
+                child: SkinoImageIcon(
+                  asset: SkinoAssets.iconReport,
+                  size: 34,
+                  padding: 2,
+                  backgroundColor: Colors.transparent,
+                  borderRadius: 12,
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  text.isMyanmar
-                      ? 'မျက်နှာ zone အလိုက် concern များကို သီးခြားကြည့်ရန်။'
-                      : 'Open zone-level details from this scan.',
-                  style: const TextStyle(
-                    color: Color(0xFF68625B),
-                    fontWeight: FontWeight.w500,
-                    height: 1.35,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TextButton.icon(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => _SkinMapPage(text: text, result: result),
               ),
-            ),
-            icon: const Icon(Icons.chevron_right_rounded),
-            label: Text(text.isMyanmar ? 'ကြည့်မယ်' : 'View'),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      text.isMyanmar ? 'မျက်နှာ skin map' : 'Face skin map',
+                      style: const TextStyle(
+                        color: Color(0xFF282420),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      text.isMyanmar
+                          ? 'ဘယ်နေရာမှာ ဘာ concern ပိုမြင်ရလဲ အမြန်ကြည့်ပါ။'
+                          : 'See which face areas need the most attention.',
+                      style: const TextStyle(
+                        color: Color(0xFF68625B),
+                        fontWeight: FontWeight.w500,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => _SkinMapPage(text: text, result: result),
+                  ),
+                ),
+                icon: const Icon(Icons.chevron_right_rounded),
+                label: Text(text.isMyanmar ? 'အသေးစိတ်' : 'Details'),
+              ),
+            ],
           ),
+          if (priorityAreas.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            for (final area in priorityAreas) ...[
+              _SkinMapMiniRow(text: text, area: area),
+              if (area != priorityAreas.last)
+                const Divider(height: 13, color: Color(0xFFFFE3D1)),
+            ],
+          ],
         ],
       ),
+    );
+  }
+}
+
+class _SkinMapMiniRow extends StatelessWidget {
+  const _SkinMapMiniRow({required this.text, required this.area});
+
+  final SkinoText text;
+  final _SkinMapArea area;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: area.color.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(
+            '${area.score}',
+            style: TextStyle(
+              color: area.color,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _skinMapAreaName(text, area.name),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF282420),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                _skinMapAreaDetail(text, area),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF68625B),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          width: 70,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: LinearProgressIndicator(
+              value: area.value.clamp(0, 1),
+              minHeight: 7,
+              backgroundColor: const Color(0xFFF1ECE5),
+              color: area.color,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -4750,12 +4838,13 @@ class _SkinWellbeingMapCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          _SkinMapFacePreview(result: result, areas: areas),
+          _SkinMapFacePreview(text: text, result: result, areas: areas),
           const SizedBox(height: 14),
           for (final area in areas) ...[
             _SkinMapAreaRow(
+              text: text,
               area: area,
-              onTap: () => _showZoneDetailSheet(context, area),
+              onTap: () => _showZoneDetailSheet(context, text, area),
             ),
             const SizedBox(height: 10),
           ],
@@ -4778,8 +4867,13 @@ class _SkinWellbeingMapCard extends StatelessWidget {
 }
 
 class _SkinMapFacePreview extends StatelessWidget {
-  const _SkinMapFacePreview({required this.result, required this.areas});
+  const _SkinMapFacePreview({
+    required this.text,
+    required this.result,
+    required this.areas,
+  });
 
+  final SkinoText text;
   final SkinAnalysisResult result;
   final List<_SkinMapArea> areas;
 
@@ -4817,27 +4911,27 @@ class _SkinMapFacePreview extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _MapLegendItem(
-                    label: 'Oil balance',
+                    label: _zoneSignalLabel(text, 'oil'),
                     active: hasOil,
                     color: const Color(0xFFF98128),
                   ),
                   const SizedBox(height: 12),
                   _MapLegendItem(
-                    label: 'Dark spots',
+                    label: _zoneSignalLabel(text, 'spots'),
                     active: hasSpots,
                     color: const Color(0xFF8E6DEB),
                   ),
                   const SizedBox(height: 12),
                   _MapLegendItem(
-                    label: 'Acne care',
+                    label: _zoneSignalLabel(text, 'acne'),
                     active: hasAcne,
                     color: const Color(0xFFE95D48),
                   ),
                   const SizedBox(height: 12),
-                  const _MapLegendItem(
-                    label: 'Routine zone',
+                  _MapLegendItem(
+                    label: text.isMyanmar ? 'routine နေရာ' : 'Routine zone',
                     active: true,
-                    color: Color(0xFF7EF1CF),
+                    color: const Color(0xFF7EF1CF),
                   ),
                 ],
               ),
@@ -5064,8 +5158,13 @@ class _SkinMapArea {
 }
 
 class _SkinMapAreaRow extends StatelessWidget {
-  const _SkinMapAreaRow({required this.area, required this.onTap});
+  const _SkinMapAreaRow({
+    required this.text,
+    required this.area,
+    required this.onTap,
+  });
 
+  final SkinoText text;
   final _SkinMapArea area;
   final VoidCallback onTap;
 
@@ -5086,7 +5185,7 @@ class _SkinMapAreaRow extends StatelessWidget {
             SizedBox(
               width: 76,
               child: Text(
-                area.name,
+                _skinMapAreaName(text, area.name),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -5111,7 +5210,7 @@ class _SkinMapAreaRow extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    area.detail,
+                    _skinMapAreaDetail(text, area),
                     style: const TextStyle(
                       color: Color(0xFF68625B),
                       fontSize: 12,
@@ -5151,18 +5250,23 @@ class _SkinMapAreaRow extends StatelessWidget {
   }
 }
 
-void _showZoneDetailSheet(BuildContext context, _SkinMapArea area) {
+void _showZoneDetailSheet(
+  BuildContext context,
+  SkinoText text,
+  _SkinMapArea area,
+) {
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (context) => _ZoneDetailSheet(area: area),
+    builder: (context) => _ZoneDetailSheet(text: text, area: area),
   );
 }
 
 class _ZoneDetailSheet extends StatelessWidget {
-  const _ZoneDetailSheet({required this.area});
+  const _ZoneDetailSheet({required this.text, required this.area});
 
+  final SkinoText text;
   final _SkinMapArea area;
 
   @override
@@ -5193,13 +5297,13 @@ class _ZoneDetailSheet extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              _ZoneDetailHeader(area: area),
+              _ZoneDetailHeader(text: text, area: area),
               const SizedBox(height: 14),
-              _ZoneSignalsCard(area: area),
+              _ZoneSignalsCard(text: text, area: area),
               const SizedBox(height: 14),
-              _ZoneConcernCard(area: area),
+              _ZoneConcernCard(text: text, area: area),
               const SizedBox(height: 14),
-              _ZoneRoutineAdviceCard(area: area),
+              _ZoneRoutineAdviceCard(text: text, area: area),
             ],
           ),
         );
@@ -5209,8 +5313,9 @@ class _ZoneDetailSheet extends StatelessWidget {
 }
 
 class _ZoneDetailHeader extends StatelessWidget {
-  const _ZoneDetailHeader({required this.area});
+  const _ZoneDetailHeader({required this.text, required this.area});
 
+  final SkinoText text;
   final _SkinMapArea area;
 
   @override
@@ -5247,7 +5352,7 @@ class _ZoneDetailHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  area.name,
+                  _skinMapAreaName(text, area.name),
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
@@ -5256,7 +5361,7 @@ class _ZoneDetailHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  area.detail,
+                  _skinMapAreaDetail(text, area),
                   style: const TextStyle(
                     color: Color(0xFFEAF6F1),
                     fontWeight: FontWeight.w500,
@@ -5273,27 +5378,28 @@ class _ZoneDetailHeader extends StatelessWidget {
 }
 
 class _ZoneSignalsCard extends StatelessWidget {
-  const _ZoneSignalsCard({required this.area});
+  const _ZoneSignalsCard({required this.text, required this.area});
 
+  final SkinoText text;
   final _SkinMapArea area;
 
   @override
   Widget build(BuildContext context) {
     final signals = [
-      _ZoneSignal('Oil balance', area.oilSignal, const Color(0xFFF98128)),
-      _ZoneSignal('Dark spots', area.darkSpotSignal, const Color(0xFF8E6DEB)),
-      _ZoneSignal('Acne/redness', area.acneSignal, const Color(0xFFE95D48)),
-      _ZoneSignal('Texture', area.textureSignal, const Color(0xFF0E5C56)),
-      _ZoneSignal('Dryness', area.drynessSignal, const Color(0xFF7A8F72)),
+      _ZoneSignal('oil', area.oilSignal, const Color(0xFFF98128)),
+      _ZoneSignal('spots', area.darkSpotSignal, const Color(0xFF8E6DEB)),
+      _ZoneSignal('acne', area.acneSignal, const Color(0xFFE95D48)),
+      _ZoneSignal('texture', area.textureSignal, const Color(0xFF0E5C56)),
+      _ZoneSignal('dryness', area.drynessSignal, const Color(0xFF7A8F72)),
     ];
 
     return _ZoneSheetCard(
-      title: 'Zone signals',
+      title: text.isMyanmar ? 'Zone signal များ' : 'Zone signals',
       icon: Icons.monitor_heart_outlined,
       child: Column(
         children: [
           for (final signal in signals) ...[
-            _ZoneSignalRow(signal: signal),
+            _ZoneSignalRow(text: text, signal: signal),
             if (signal != signals.last) const SizedBox(height: 12),
           ],
         ],
@@ -5303,8 +5409,9 @@ class _ZoneSignalsCard extends StatelessWidget {
 }
 
 class _ZoneSignalRow extends StatelessWidget {
-  const _ZoneSignalRow({required this.signal});
+  const _ZoneSignalRow({required this.text, required this.signal});
 
+  final SkinoText text;
   final _ZoneSignal signal;
 
   @override
@@ -5316,7 +5423,7 @@ class _ZoneSignalRow extends StatelessWidget {
         SizedBox(
           width: 92,
           child: Text(
-            signal.name,
+            _zoneSignalLabel(text, signal.name),
             style: const TextStyle(
               color: Color(0xFF282420),
               fontSize: 12,
@@ -5351,19 +5458,22 @@ class _ZoneSignalRow extends StatelessWidget {
 }
 
 class _ZoneConcernCard extends StatelessWidget {
-  const _ZoneConcernCard({required this.area});
+  const _ZoneConcernCard({required this.text, required this.area});
 
+  final SkinoText text;
   final _SkinMapArea area;
 
   @override
   Widget build(BuildContext context) {
     return _ZoneSheetCard(
-      title: 'Visible concerns',
+      title: text.isMyanmar ? 'မြင်ရသော concern' : 'Visible concerns',
       icon: Icons.fact_check_outlined,
       child: area.concerns.isEmpty
-          ? const Text(
-              'No strong concern detected in this zone.',
-              style: TextStyle(
+          ? Text(
+              text.isMyanmar
+                  ? 'ဒီနေရာမှာ အရေးကြီး concern မတွေ့ပါ။'
+                  : 'No strong concern detected in this zone.',
+              style: const TextStyle(
                 color: Color(0xFF68625B),
                 fontWeight: FontWeight.w500,
               ),
@@ -5375,7 +5485,7 @@ class _ZoneConcernCard extends StatelessWidget {
                   .map(
                     (concern) => _SmallInfoChip(
                       label:
-                          '${_titleCase(concern.name)} ${(concern.confidence * 100).round()}% ${concern.severity}',
+                          '${text.concernLabel(concern.name)} ${(concern.confidence * 100).round()}% ${text.severityLabel(concern.severity)}',
                     ),
                   )
                   .toList(),
@@ -5385,17 +5495,18 @@ class _ZoneConcernCard extends StatelessWidget {
 }
 
 class _ZoneRoutineAdviceCard extends StatelessWidget {
-  const _ZoneRoutineAdviceCard({required this.area});
+  const _ZoneRoutineAdviceCard({required this.text, required this.area});
 
+  final SkinoText text;
   final _SkinMapArea area;
 
   @override
   Widget build(BuildContext context) {
     return _ZoneSheetCard(
-      title: 'Routine advice',
+      title: text.isMyanmar ? 'Routine အကြံပြုချက်' : 'Routine advice',
       icon: Icons.spa_outlined,
       child: Text(
-        _zoneRoutineAdvice(area),
+        _zoneRoutineAdvice(text, area),
         style: const TextStyle(
           color: Color(0xFF625B53),
           fontWeight: FontWeight.w500,
@@ -5561,11 +5672,11 @@ _SkinMapArea _skinMapAreaFromZone(SkinZone zone) {
 
 _ZoneSignal _strongestZoneSignal(SkinZone zone) {
   final signals = [
-    _ZoneSignal('Oil balance', zone.oiliness, const Color(0xFFF98128)),
-    _ZoneSignal('Dark spots', zone.darkSpots, const Color(0xFF8E6DEB)),
-    _ZoneSignal('Acne care', zone.redness, const Color(0xFFE95D48)),
-    _ZoneSignal('Texture', zone.texture, const Color(0xFF0E5C56)),
-    _ZoneSignal('Dryness', zone.dryness, const Color(0xFF7A8F72)),
+    _ZoneSignal('oil', zone.oiliness, const Color(0xFFF98128)),
+    _ZoneSignal('spots', zone.darkSpots, const Color(0xFF8E6DEB)),
+    _ZoneSignal('acne', zone.redness, const Color(0xFFE95D48)),
+    _ZoneSignal('texture', zone.texture, const Color(0xFF0E5C56)),
+    _ZoneSignal('dryness', zone.dryness, const Color(0xFF7A8F72)),
   ];
 
   return signals.reduce((best, item) => item.value > best.value ? item : best);
@@ -5592,7 +5703,87 @@ class _ZoneSignal {
   final Color color;
 }
 
-String _zoneRoutineAdvice(_SkinMapArea area) {
+String _skinMapAreaName(SkinoText text, String name) {
+  if (!text.isMyanmar) {
+    return name;
+  }
+
+  final value = name.toLowerCase();
+  if (value.contains('forehead')) {
+    return 'နဖူး';
+  }
+  if (value.contains('left') && value.contains('cheek')) {
+    return 'ဘယ်ပါး';
+  }
+  if (value.contains('right') && value.contains('cheek')) {
+    return 'ညာပါး';
+  }
+  if (value.contains('cheek')) {
+    return 'ပါး';
+  }
+  if (value.contains('nose')) {
+    return 'နှာခေါင်း';
+  }
+  if (value.contains('chin')) {
+    return 'မေးစေ့';
+  }
+  return name;
+}
+
+String _zoneSignalLabel(SkinoText text, String name) {
+  final value = name.toLowerCase();
+  if (!text.isMyanmar) {
+    return switch (value) {
+      'oil' => 'Oil balance',
+      'spots' => 'Dark spots',
+      'acne' => 'Acne/redness',
+      'texture' => 'Texture',
+      'dryness' => 'Dryness',
+      _ => name,
+    };
+  }
+
+  return switch (value) {
+    'oil' => 'အဆီပြန်မှု',
+    'spots' => 'အမည်းစက်',
+    'acne' => 'ဝက်ခြံ/နီခြင်း',
+    'texture' => 'အသားအရေ texture',
+    'dryness' => 'ခြောက်သွေ့မှု',
+    _ => name,
+  };
+}
+
+String _skinMapAreaDetail(SkinoText text, _SkinMapArea area) {
+  if (area.concerns.isNotEmpty) {
+    final concern = area.concerns.first;
+    return text.isMyanmar
+        ? '${text.concernLabel(concern.name)} ${(concern.confidence * 100).round()}% • ${text.severityLabel(concern.severity)}'
+        : '${text.concernLabel(concern.name)} ${(concern.confidence * 100).round()}% • ${text.severityLabel(concern.severity)}';
+  }
+
+  if (area.score >= 82) {
+    return text.isMyanmar
+        ? 'တည်ငြိမ်သော zone • score ${area.score}'
+        : 'Stable zone • score ${area.score}';
+  }
+
+  final strongest = _strongestAreaSignal(area);
+  return text.isMyanmar
+      ? '${_zoneSignalLabel(text, strongest.name)} သတိထားရန် • score ${area.score}'
+      : '${_zoneSignalLabel(text, strongest.name)} focus • score ${area.score}';
+}
+
+_ZoneSignal _strongestAreaSignal(_SkinMapArea area) {
+  return [
+    _ZoneSignal('oil', area.oilSignal, const Color(0xFFF98128)),
+    _ZoneSignal('spots', area.darkSpotSignal, const Color(0xFF8E6DEB)),
+    _ZoneSignal('acne', area.acneSignal, const Color(0xFFE95D48)),
+    _ZoneSignal('texture', area.textureSignal, const Color(0xFF0E5C56)),
+    _ZoneSignal('dryness', area.drynessSignal, const Color(0xFF7A8F72)),
+  ].reduce((best, item) => item.value > best.value ? item : best);
+}
+
+String _zoneRoutineAdvice(SkinoText text, _SkinMapArea area) {
   final strongest = [
     _ZoneSignal('oil', area.oilSignal, const Color(0xFFF98128)),
     _ZoneSignal('spots', area.darkSpotSignal, const Color(0xFF8E6DEB)),
@@ -5602,21 +5793,36 @@ String _zoneRoutineAdvice(_SkinMapArea area) {
   ].reduce((best, item) => item.value > best.value ? item : best);
 
   if (strongest.value < 0.35) {
-    return 'This zone looks stable. Keep gentle cleansing, moisturizer, and sunscreen consistent.';
+    return text.isMyanmar
+        ? 'ဒီ zone က တည်ငြိမ်ပါတယ်။ နူးညံ့စွာဆေးကြောခြင်း၊ moisturizer နှင့် sunscreen ကို ပုံမှန်ဆက်လုပ်ပါ။'
+        : 'This zone looks stable. Keep gentle cleansing, moisturizer, and sunscreen consistent.';
   }
 
   return switch (strongest.name) {
     'oil' =>
-      'Focus on light layers here. Use gentle cleansing and avoid heavy oily products on this zone.',
+      text.isMyanmar
+          ? 'ဒီနေရာမှာ ပေါ့ပါးတဲ့ product များကိုသုံးပါ။ အဆီပြန်စေတဲ့ heavy product များကို လျှော့ပါ။'
+          : 'Focus on light layers here. Use gentle cleansing and avoid heavy oily products on this zone.',
     'spots' =>
-      'Keep sunscreen strict for this zone and avoid picking. Brightening care should be gentle and consistent.',
+      text.isMyanmar
+          ? 'ဒီနေရာအတွက် sunscreen ကို မပျက်မကွက်သုံးပါ။ မညှစ်မကိုင်ဘဲ brightening care ကို နူးညံ့စွာဆက်လုပ်ပါ။'
+          : 'Keep sunscreen strict for this zone and avoid picking. Brightening care should be gentle and consistent.',
     'acne' =>
-      'Use calm acne care here. Avoid squeezing, keep the zone clean, and consider specialist help if it is painful or spreading.',
+      text.isMyanmar
+          ? 'ဒီနေရာကို ညှစ်ခြင်းရှောင်ပါ။ သန့်ရှင်းစွာထားပြီး နာကျင်/ပြန့်လာလျှင် specialist ကိုပြပါ။'
+          : 'Use calm acne care here. Avoid squeezing, keep the zone clean, and consider specialist help if it is painful or spreading.',
     'texture' =>
-      'Keep the barrier calm. Avoid aggressive scrubbing and track this zone again after the routine cycle.',
+      text.isMyanmar
+          ? 'အသားအရေ barrier ကို နူးညံ့စွာထိန်းပါ။ ကြမ်းတမ်းစွာ scrub မလုပ်ဘဲ routine ပြီးမှ ပြန်စကင်ပါ။'
+          : 'Keep the barrier calm. Avoid aggressive scrubbing and track this zone again after the routine cycle.',
     'dryness' =>
-      'Support hydration here with moisturizer and avoid harsh cleansing around this zone.',
-    _ => 'Keep routine gentle and track this zone again in the next scan.',
+      text.isMyanmar
+          ? 'ဒီနေရာကို moisturizer ဖြင့် hydration ထောက်ပံ့ပါ။ Harsh cleanser များကို လျှော့ပါ။'
+          : 'Support hydration here with moisturizer and avoid harsh cleansing around this zone.',
+    _ =>
+      text.isMyanmar
+          ? 'Routine ကို နူးညံ့စွာဆက်လုပ်ပြီး နောက်စကင်တွင် ဒီ zone ကို ပြန်စစ်ပါ။'
+          : 'Keep routine gentle and track this zone again in the next scan.',
   };
 }
 

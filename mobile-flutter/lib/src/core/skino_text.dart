@@ -85,7 +85,7 @@ class SkinoText {
   String get scanResultTitle => isMyanmar ? 'စကင် ရလဒ်' : 'Scan result';
   String get latestScan => isMyanmar ? 'နောက်ဆုံး စကင်' : 'Latest scan';
   String skinTypeConfidence(int percent) => isMyanmar
-      ? '$percent% skin type confidence'
+      ? 'skin type ယုံကြည်မှု $percent%'
       : '$percent% skin type confidence';
   String get detectedConcerns =>
       isMyanmar ? 'တွေ့ရှိသော concern များ' : 'Detected concerns';
