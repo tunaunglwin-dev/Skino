@@ -8030,17 +8030,21 @@ class _RoutineCheckStep extends StatelessWidget {
           const SizedBox(width: 10),
           AnimatedContainer(
             duration: const Duration(milliseconds: 160),
-            width: 30,
-            height: 30,
+            width: 38,
+            height: 38,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: isDone ? const Color(0xFFEAF6F1) : const Color(0xFFFFF3EC),
-              borderRadius: BorderRadius.circular(11),
+              borderRadius: BorderRadius.circular(13),
             ),
-            child: Icon(
-              _routineStepIcon(label),
-              color: isDone ? const Color(0xFF0E5C56) : accent,
-              size: 18,
+            child: Opacity(
+              opacity: isDone ? 0.62 : 1,
+              child: Image.asset(
+                _routineStepAsset(label),
+                width: 34,
+                height: 34,
+                fit: BoxFit.contain,
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -8071,23 +8075,23 @@ class _RoutineCheckStep extends StatelessWidget {
   }
 }
 
-IconData _routineStepIcon(String label) {
+String _routineStepAsset(String label) {
   final value = label.toLowerCase();
   if (value.contains('cleanser') || value.contains('clean')) {
-    return Icons.water_drop_outlined;
+    return SkinoAssets.productCleanser;
   }
   if (value.contains('serum') ||
       value.contains('treatment') ||
       value.contains('spot')) {
-    return Icons.science_outlined;
+    return SkinoAssets.productSerum;
   }
   if (value.contains('moistur') || value.contains('cream')) {
-    return Icons.spa_outlined;
+    return SkinoAssets.productMoisturizer;
   }
   if (value.contains('sun') || value.contains('spf')) {
-    return Icons.wb_sunny_outlined;
+    return SkinoAssets.productSunscreen;
   }
-  return Icons.checklist_rounded;
+  return SkinoAssets.iconRoutine;
 }
 
 class _RoutineProgressCard extends StatelessWidget {
@@ -9506,6 +9510,8 @@ class _HelpSafetyPage extends StatelessWidget {
                 'Keep face photos, skin records, and notes private unless the user gives permission.',
           ),
           const SizedBox(height: 12),
+          const _AiConsentReviewCard(),
+          const SizedBox(height: 12),
           const _SafetyTipCard(
             icon: Icons.medical_services_outlined,
             assetIcon: SkinoAssets.iconSpecialist,
@@ -9520,6 +9526,82 @@ class _HelpSafetyPage extends StatelessWidget {
             title: 'Gentle routine first',
             subtitle:
                 'Routine suggestions should stay simple and avoid aggressive product mixing.',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AiConsentReviewCard extends StatelessWidget {
+  const _AiConsentReviewCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF6F1),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFBFE6D7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              SkinoImageIcon.inline(
+                asset: SkinoAssets.iconReport,
+                size: 28,
+                backgroundColor: Colors.white,
+              ),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'AI Face Scan Consent',
+                  style: TextStyle(
+                    color: Color(0xFF123C36),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Your face scan may reveal sensitive skin and biometric information. Skino uses it only to analyze visible skin concerns, show your result, and create care guidance. We do not sell your face scan. You control whether a logged-in scan can help improve Skino AI, and you can ask us to review or delete your data.',
+            style: TextStyle(
+              color: Color(0xFF3D514B),
+              height: 1.4,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFBFE6D7)),
+            ),
+            child: const Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.check_box_rounded, color: Color(0xFF0E5C56)),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Consent accepted before using Skino. This demo is guidance only, not medical advice.',
+                    style: TextStyle(
+                      color: Color(0xFF3D514B),
+                      height: 1.35,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

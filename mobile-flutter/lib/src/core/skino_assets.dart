@@ -30,4 +30,11 @@ class SkinoAssets {
   static const String iconProgress = 'assets/branding/skino_icon_progress.png';
   static const String iconReport = 'assets/branding/skino_icon_report.png';
   static const String resultMascot = 'assets/branding/skino_result_mascot.png';
+  static const String productCleanser =
+      'assets/branding/skino_product_cleanser.png';
+  static const String productSerum = 'assets/branding/skino_product_serum.png';
+  static const String productMoisturizer =
+      'assets/branding/skino_product_moisturizer.png';
+  static const String productSunscreen =
+      'assets/branding/skino_product_sunscreen.png';
 }
