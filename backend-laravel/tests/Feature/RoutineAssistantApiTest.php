@@ -71,4 +71,32 @@ class RoutineAssistantApiTest extends TestCase
 
         Http::assertNothingSent();
     }
+
+    public function test_routine_assistant_uses_demo_fallback_when_gemini_key_is_missing(): void
+    {
+        config([
+            'services.gemini.api_key' => '',
+            'services.gemini.demo_fallback' => true,
+        ]);
+
+        Http::fake();
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->postJson('/api/chat/routine-assistant', [
+            'message' => 'Explain my result',
+            'context' => [
+                'scan' => [
+                    'skin_type' => 'sensitive',
+                    'skin_health_score' => 57,
+                ],
+            ],
+        ])
+            ->assertOk()
+            ->assertJsonPath(
+                'data.reply',
+                'Your scan suggests sensitive needs gentle, consistent care. Your latest score is 57/100. Treat this as guidance only, not a medical diagnosis.',
+            );
+
+        Http::assertNothingSent();
+    }
 }

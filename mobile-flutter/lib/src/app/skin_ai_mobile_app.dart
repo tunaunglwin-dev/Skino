@@ -104,7 +104,7 @@ class SkinAiMobileApp extends StatelessWidget {
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFFFFF9F5),
+            foregroundColor: const Color(0xFF0E5C56),
             side: const BorderSide(color: Color(0xFFFFB98D)),
             textStyle: const TextStyle(fontWeight: FontWeight.w600),
             minimumSize: const Size.fromHeight(48),

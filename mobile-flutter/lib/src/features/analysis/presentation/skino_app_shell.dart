@@ -2137,15 +2137,8 @@ class _BuddyPageState extends State<_BuddyPage> {
 
     return _PageScaffold(
       children: [
-        _PageTitle(
-          title: 'Little Guy',
-          subtitle: widget.text.isMyanmar
-              ? 'Scan နဲ့ routine context ပေါ်မူတည်ပြီးသာ ဖြေကူတဲ့ Gemini Buddy ပါ။'
-              : 'A Gemini Buddy that only answers from your scan and routine context.',
-        ),
-        const SizedBox(height: 14),
         Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.96),
             borderRadius: BorderRadius.circular(24),
@@ -2169,36 +2162,10 @@ class _BuddyPageState extends State<_BuddyPage> {
                 messageCount: _messages.length,
                 onOpenHistory: _showChatHistory,
               ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: quickPrompts
-                    .map(
-                      (prompt) => ActionChip(
-                        onPressed: canChat && hasScan && !_isSending
-                            ? () => _send(prompt)
-                            : null,
-                        avatar: const Icon(
-                          Icons.auto_awesome_rounded,
-                          size: 16,
-                        ),
-                        backgroundColor: Colors.white,
-                        disabledColor: const Color(0xFFF4ECE6),
-                        side: const BorderSide(color: Color(0xFFFFDCC4)),
-                        labelStyle: const TextStyle(
-                          color: Color(0xFF6E4B32),
-                          fontWeight: FontWeight.w600,
-                        ),
-                        label: Text(prompt),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 12),
               Container(
-                height: 292,
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                height: 258,
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFFF9F4),
                   borderRadius: BorderRadius.circular(22),
@@ -2224,7 +2191,7 @@ class _BuddyPageState extends State<_BuddyPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               if (!canChat)
                 _BuddyNotice(
                   text: widget.text.isMyanmar
@@ -2246,37 +2213,36 @@ class _BuddyPageState extends State<_BuddyPage> {
                       : 'Ask about your routine or result...',
                   onSend: () => _send(),
                 ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: widget.onStartScan,
-                      icon: const SkinoImageIcon(
-                        asset: SkinoAssets.iconScan,
-                        size: 22,
-                        padding: 1,
-                        backgroundColor: Colors.transparent,
-                        borderRadius: 8,
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: quickPrompts
+                    .map(
+                      (prompt) => ActionChip(
+                        onPressed: canChat && hasScan && !_isSending
+                            ? () => _send(prompt)
+                            : null,
+                        avatar: const Icon(
+                          Icons.auto_awesome_rounded,
+                          size: 15,
+                        ),
+                        backgroundColor: Colors.white,
+                        disabledColor: const Color(0xFFF4ECE6),
+                        side: const BorderSide(color: Color(0xFFFFDCC4)),
+                        visualDensity: const VisualDensity(
+                          horizontal: -2,
+                          vertical: -2,
+                        ),
+                        labelStyle: const TextStyle(
+                          color: Color(0xFF6E4B32),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        label: Text(prompt),
                       ),
-                      label: Text(widget.text.startScan),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: hasRoutine ? widget.onOpenCare : null,
-                      icon: const SkinoImageIcon(
-                        asset: SkinoAssets.iconRoutine,
-                        size: 22,
-                        padding: 1,
-                        backgroundColor: Colors.transparent,
-                        borderRadius: 8,
-                      ),
-                      label: Text(widget.text.care),
-                    ),
-                  ),
-                ],
+                    )
+                    .toList(),
               ),
             ],
           ),
@@ -2321,9 +2287,9 @@ class _BuddyHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         gradient: const LinearGradient(
           colors: [Color(0xFFFFF5EC), Color(0xFFEAF7F1)],
           begin: Alignment.topLeft,
@@ -2334,12 +2300,12 @@ class _BuddyHeader extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 86,
-            height: 86,
+            width: 58,
+            height: 58,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.8),
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.white),
               boxShadow: const [
                 BoxShadow(
@@ -2351,13 +2317,13 @@ class _BuddyHeader extends StatelessWidget {
             ),
             child: const SkinoImageIcon(
               asset: SkinoAssets.navChat,
-              size: 78,
+              size: 54,
               padding: 0,
               backgroundColor: Colors.transparent,
-              borderRadius: 26,
+              borderRadius: 18,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2366,22 +2332,23 @@ class _BuddyHeader extends StatelessWidget {
                   'Skino Little Guy',
                   style: const TextStyle(
                     color: Color(0xFF282420),
-                    fontSize: 21,
+                    fontSize: 17,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 5),
+                const SizedBox(height: 2),
                 Text(
                   text.isMyanmar
                       ? 'သင့် scan နဲ့ routine အတွက်ပဲ ဖြေကူမယ်'
                       : 'Focused on your scan and routine',
                   style: const TextStyle(
                     color: Color(0xFF655C55),
-                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     height: 1.25,
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 6),
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,

@@ -18,7 +18,11 @@ class RoutineAssistant
         $apiKey = (string) config('services.gemini.api_key', '');
 
         if ($apiKey === '') {
-            throw new RuntimeException('Gemini API key is not configured.');
+            if ((bool) config('services.gemini.demo_fallback', true)) {
+                return $this->demoReply($message, $context);
+            }
+
+            throw new RuntimeException('Gemini API key is not configured. Add GEMINI_API_KEY to backend-laravel/.env, then run php artisan config:clear.');
         }
 
         $model = $this->normalizedModel((string) config('services.gemini.model', 'gemini-2.5-flash'));
@@ -139,5 +143,34 @@ TEXT;
     private function normalizedModel(string $model): string
     {
         return preg_replace('#^models/#', '', trim($model)) ?: 'gemini-2.5-flash';
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    private function demoReply(string $message, array $context): string
+    {
+        $scan = is_array($context['scan'] ?? null) ? $context['scan'] : [];
+        $routine = is_array($context['routine'] ?? null) ? $context['routine'] : [];
+        $lowerMessage = mb_strtolower($message);
+        $skinType = (string) ($scan['skin_type'] ?? 'your skin');
+        $score = $scan['skin_health_score'] ?? null;
+        $steps = is_array($routine['steps'] ?? null) ? array_slice($routine['steps'], 0, 3) : [];
+
+        if (str_contains($lowerMessage, 'rescan') || str_contains($lowerMessage, 'scan')) {
+            return 'For this demo, rescan after your routine cycle or sooner if the first scan had poor light, covered forehead, or blur. Keep the face clear and use even light.';
+        }
+
+        if (str_contains($lowerMessage, 'result') || str_contains($lowerMessage, 'score')) {
+            $scoreText = is_numeric($score) ? " Your latest score is {$score}/100." : '';
+
+            return "Your scan suggests {$skinType} needs gentle, consistent care.{$scoreText} Treat this as guidance only, not a medical diagnosis.";
+        }
+
+        if ($steps !== []) {
+            return 'For today, keep it simple: '.implode(', ', $steps).'. Avoid mixing too many strong products, and ask a specialist if irritation, pain, or swelling appears.';
+        }
+
+        return 'For this demo, start with a gentle cleanse, light moisturizer, and sunscreen in the morning. Run a scan first so Buddy can give more specific routine guidance.';
     }
 }
