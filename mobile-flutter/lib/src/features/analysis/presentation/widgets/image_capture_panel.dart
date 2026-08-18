@@ -297,6 +297,7 @@ class _ImageCapturePanelState extends State<ImageCapturePanel> {
       final faceDistanceOk = faceArea >= 0.035 && faceArea <= 0.55;
       final enoughLight = brightness >= 0.26 && brightness <= 0.96;
       final yaw = face.headEulerAngleY ?? 0;
+      final angleOk = yaw.abs() < 25;
       final straightNow =
           faceDistanceOk &&
           enoughLight &&
@@ -318,6 +319,7 @@ class _ImageCapturePanelState extends State<ImageCapturePanel> {
         faceCentered: faceCentered,
         faceDistanceOk: faceDistanceOk,
         enoughLight: enoughLight,
+        angleOk: angleOk,
         lookStraightDone: _gateStatus.lookStraightDone || straightNow,
         turnLeftDone: true,
         turnRightDone: true,
@@ -724,6 +726,7 @@ class _ScanGateStatus {
     this.faceCentered = false,
     this.faceDistanceOk = false,
     this.enoughLight = false,
+    this.angleOk = false,
     this.lookStraightDone = false,
     this.turnLeftDone = false,
     this.turnRightDone = false,
@@ -735,19 +738,22 @@ class _ScanGateStatus {
   final bool faceCentered;
   final bool faceDistanceOk;
   final bool enoughLight;
+  final bool angleOk;
   final bool lookStraightDone;
   final bool turnLeftDone;
   final bool turnRightDone;
   final bool holdStillDone;
   final String message;
 
-  bool get canCapture => faceDetected && faceDistanceOk && enoughLight;
+  bool get canCapture =>
+      faceDetected && faceDistanceOk && enoughLight && angleOk;
 
   int get completedCount {
     return [
       faceDetected,
       enoughLight,
       faceDistanceOk,
+      angleOk,
     ].where((done) => done).length;
   }
 
@@ -756,6 +762,7 @@ class _ScanGateStatus {
     bool? faceCentered,
     bool? faceDistanceOk,
     bool? enoughLight,
+    bool? angleOk,
     bool? lookStraightDone,
     bool? turnLeftDone,
     bool? turnRightDone,
@@ -767,6 +774,7 @@ class _ScanGateStatus {
       faceCentered: faceCentered ?? this.faceCentered,
       faceDistanceOk: faceDistanceOk ?? this.faceDistanceOk,
       enoughLight: enoughLight ?? this.enoughLight,
+      angleOk: angleOk ?? this.angleOk,
       lookStraightDone: lookStraightDone ?? this.lookStraightDone,
       turnLeftDone: turnLeftDone ?? this.turnLeftDone,
       turnRightDone: turnRightDone ?? this.turnRightDone,
@@ -1036,10 +1044,10 @@ class _ScanReadinessMeter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = status.completedCount / 3;
+    final progress = status.completedCount / 4;
     final label = status.canCapture
         ? 'Ready for clean capture'
-        : 'Scan readiness ${status.completedCount}/3';
+        : 'Scan readiness ${status.completedCount}/4';
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1460,10 +1468,19 @@ class _ScanQualityChecklist extends StatelessWidget {
             done: hasFrame || status.faceDistanceOk,
           ),
           _QualityChip(
+            icon: Icons.screen_rotation_alt_outlined,
+            label: hasFrame
+                ? 'Angle checked'
+                : status.angleOk
+                ? 'Angle OK'
+                : 'Face front',
+            done: hasFrame || status.angleOk,
+          ),
+          _QualityChip(
             icon: Icons.verified_rounded,
             label: status.canCapture
                 ? 'Ready'
-                : '${status.completedCount}/3 OK',
+                : '${status.completedCount}/4 OK',
             done: hasFrame || status.canCapture,
           ),
         ],

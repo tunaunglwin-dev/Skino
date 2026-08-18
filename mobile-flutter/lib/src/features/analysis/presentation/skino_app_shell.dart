@@ -5354,6 +5354,19 @@ class _ActiveRoutinePanelState extends State<_ActiveRoutinePanel> {
           ).length,
         ),
         const SizedBox(height: 12),
+        _RoutineNextActionCard(
+          text: text,
+          showMorning: _showMorningRoutine,
+          morningDone: _morningDone,
+          nightDone: _nightDone,
+          visibleDone: visibleDone,
+          visibleCheckedCount: visibleChecks.length,
+          visibleStepCount: visibleSteps.length,
+          accent: visibleAccent,
+          onSwitchMoment: () =>
+              setState(() => _showMorningRoutine = !_showMorningRoutine),
+        ),
+        const SizedBox(height: 12),
         _RoutineWeekPlanner(
           text: text,
           days: widget.activeRoutine.week.checkIns,
@@ -5655,6 +5668,130 @@ class _RoutineTodayDashboard extends StatelessWidget {
             done: nightDone,
             accent: const Color(0xFF7EF1CF),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoutineNextActionCard extends StatelessWidget {
+  const _RoutineNextActionCard({
+    required this.text,
+    required this.showMorning,
+    required this.morningDone,
+    required this.nightDone,
+    required this.visibleDone,
+    required this.visibleCheckedCount,
+    required this.visibleStepCount,
+    required this.accent,
+    required this.onSwitchMoment,
+  });
+
+  final SkinoText text;
+  final bool showMorning;
+  final bool morningDone;
+  final bool nightDone;
+  final bool visibleDone;
+  final int visibleCheckedCount;
+  final int visibleStepCount;
+  final Color accent;
+  final VoidCallback onSwitchMoment;
+
+  @override
+  Widget build(BuildContext context) {
+    final allDone = morningDone && nightDone;
+    final momentLabel = showMorning ? text.morningCare : text.nightCare;
+    final otherLabel = showMorning ? text.nightCare : text.morningCare;
+    final title = allDone
+        ? (text.isMyanmar ? 'ဒီနေ့ routine ပြီးပါပြီ' : 'Today is complete')
+        : visibleDone
+        ? (text.isMyanmar
+              ? '$otherLabel ဆက်လုပ်ပါ'
+              : 'Continue with $otherLabel')
+        : (text.isMyanmar
+              ? '$momentLabel အတွက် next step'
+              : '$momentLabel next step');
+    final detail = allDone
+        ? (text.isMyanmar
+              ? 'နောက် follow-up scan အတွက် progress ကို စောင့်ကြည့်ပါ။'
+              : 'Keep the rhythm and watch for your follow-up scan.')
+        : visibleDone
+        ? (text.isMyanmar
+              ? 'မပြီးသေးတဲ့ care moment ကို ပြောင်းကြည့်ပါ။'
+              : 'Switch to the remaining care moment.')
+        : (text.isMyanmar
+              ? '$visibleCheckedCount/$visibleStepCount step ပြီးပါပြီ။'
+              : '$visibleCheckedCount of $visibleStepCount steps complete.');
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFFFE3D1)),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withValues(alpha: 0.07),
+            blurRadius: 14,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(17),
+            ),
+            child: Icon(
+              allDone
+                  ? Icons.verified_rounded
+                  : showMorning
+                  ? Icons.wb_sunny_outlined
+                  : Icons.dark_mode_outlined,
+              color: accent,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF282420),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  detail,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Color(0xFF68625B),
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (!allDone) ...[
+            const SizedBox(width: 10),
+            IconButton.filledTonal(
+              onPressed: visibleDone ? onSwitchMoment : null,
+              icon: const Icon(Icons.swap_horiz_rounded),
+              tooltip: 'Switch routine moment',
+            ),
+          ],
         ],
       ),
     );

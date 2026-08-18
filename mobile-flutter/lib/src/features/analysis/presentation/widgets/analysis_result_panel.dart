@@ -4,6 +4,7 @@ import '../../../../core/skino_assets.dart';
 import '../../../../core/skino_image_icon.dart';
 import '../../../../core/skino_text.dart';
 import '../../models/skin_analysis_result.dart';
+import '../../models/skin_zone.dart';
 import '../../models/treatment_package.dart';
 
 class AnalysisResultPanel extends StatelessWidget {
@@ -53,6 +54,10 @@ class AnalysisResultPanel extends StatelessWidget {
             quality: quality,
             confidence: result.skinTypeConfidence,
           ),
+          if (result.skinZones.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _SkinZoneHighlights(result: result, text: text),
+          ],
           const SizedBox(height: 16),
           Row(
             children: [
@@ -373,6 +378,123 @@ class _ScanQualitySummary extends StatelessWidget {
   }
 }
 
+class _SkinZoneHighlights extends StatelessWidget {
+  const _SkinZoneHighlights({required this.result, required this.text});
+
+  final SkinAnalysisResult result;
+  final SkinoText text;
+
+  @override
+  Widget build(BuildContext context) {
+    final zones = result.skinZones.toList()
+      ..sort((left, right) => left.score.compareTo(right.score));
+    final visibleZones = zones.take(3).toList();
+
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7F1),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFFFD0B3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.grid_view_rounded,
+                color: Color(0xFFF98128),
+                size: 19,
+              ),
+              const SizedBox(width: 7),
+              Text(
+                text.isMyanmar ? 'Zone highlights' : 'Zone highlights',
+                style: const TextStyle(
+                  color: Color(0xFF282420),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          for (final zone in visibleZones) ...[
+            _SkinZoneRow(zone: zone),
+            if (zone != visibleZones.last)
+              const Divider(height: 13, color: Color(0xFFFFE3D1)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SkinZoneRow extends StatelessWidget {
+  const _SkinZoneRow({required this.zone});
+
+  final SkinZone zone;
+
+  @override
+  Widget build(BuildContext context) {
+    final concern = _zoneConcernLabel(zone);
+    final tone = zone.score >= 78
+        ? const Color(0xFF0E5C56)
+        : zone.score >= 60
+        ? const Color(0xFFF98128)
+        : const Color(0xFF9E2732);
+
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: tone.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Text(
+            '${zone.score}',
+            style: TextStyle(
+              color: tone,
+              fontSize: 13,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                zone.label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF282420),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                concern,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Color(0xFF68625B),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ResultInfoChip extends StatelessWidget {
   const _ResultInfoChip({
     required this.icon,
@@ -634,4 +756,27 @@ String _titleCase(String value) {
       .where((part) => part.isNotEmpty)
       .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
       .join(' ');
+}
+
+String _zoneConcernLabel(SkinZone zone) {
+  if (zone.concerns.isNotEmpty) {
+    return zone.concerns
+        .take(2)
+        .map((concern) => _titleCase(concern.name))
+        .join(' + ');
+  }
+
+  final scores = <MapEntry<String, double>>[
+    MapEntry('Oiliness', zone.oiliness),
+    MapEntry('Dark spots', zone.darkSpots),
+    MapEntry('Redness', zone.redness),
+    MapEntry('Texture', zone.texture),
+    MapEntry('Dryness', zone.dryness),
+  ]..sort((left, right) => right.value.compareTo(left.value));
+
+  final top = scores.first;
+  if (top.value < 0.18) {
+    return 'No strong concern in this zone';
+  }
+  return '${top.key} ${(top.value * 100).round()}%';
 }
