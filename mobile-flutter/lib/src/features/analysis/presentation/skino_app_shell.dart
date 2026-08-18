@@ -6242,6 +6242,7 @@ class _ActiveRoutinePanelState extends State<_ActiveRoutinePanel> {
   bool _updatingMorning = false;
   bool _updatingNight = false;
   bool _showMorningRoutine = true;
+  bool _showDashboardDetails = false;
 
   @override
   void initState() {
@@ -6483,43 +6484,6 @@ class _ActiveRoutinePanelState extends State<_ActiveRoutinePanel> {
           reason: routine?.reason ?? text.todayBeautyPlanSubtitle,
         ),
         const SizedBox(height: 12),
-        _RoutineTodayDashboard(
-          text: text,
-          activeRoutine: widget.activeRoutine,
-          morningDone: _morningDone,
-          nightDone: _nightDone,
-          morningStepCount: morningSteps.length,
-          nightStepCount: nightSteps.length,
-          morningCheckedCount: _visibleChecks(
-            _morningStepChecks,
-            morningSteps.length,
-          ).length,
-          nightCheckedCount: _visibleChecks(
-            _nightStepChecks,
-            nightSteps.length,
-          ).length,
-        ),
-        const SizedBox(height: 12),
-        _RoutineNextActionCard(
-          text: text,
-          showMorning: _showMorningRoutine,
-          morningDone: _morningDone,
-          nightDone: _nightDone,
-          visibleDone: visibleDone,
-          visibleCheckedCount: visibleChecks.length,
-          visibleStepCount: visibleSteps.length,
-          accent: visibleAccent,
-          onSwitchMoment: () =>
-              setState(() => _showMorningRoutine = !_showMorningRoutine),
-        ),
-        const SizedBox(height: 12),
-        _RoutineWeekPlanner(
-          text: text,
-          days: widget.activeRoutine.week.checkIns,
-          selectedDate: _selectedDate,
-          onSelect: _selectDay,
-        ),
-        const SizedBox(height: 12),
         _RoutineMomentSwitch(
           text: text,
           showMorning: _showMorningRoutine,
@@ -6543,6 +6507,46 @@ class _ActiveRoutinePanelState extends State<_ActiveRoutinePanel> {
           onToggleStep: (index) => _showMorningRoutine
               ? _toggleMorningStep(index, morningSteps.length)
               : _toggleNightStep(index, nightSteps.length),
+        ),
+        const SizedBox(height: 12),
+        _RoutineNextActionCard(
+          text: text,
+          showMorning: _showMorningRoutine,
+          morningDone: _morningDone,
+          nightDone: _nightDone,
+          visibleDone: visibleDone,
+          visibleCheckedCount: visibleChecks.length,
+          visibleStepCount: visibleSteps.length,
+          accent: visibleAccent,
+          onSwitchMoment: () =>
+              setState(() => _showMorningRoutine = !_showMorningRoutine),
+        ),
+        const SizedBox(height: 12),
+        _RoutineTodayDashboard(
+          text: text,
+          activeRoutine: widget.activeRoutine,
+          morningDone: _morningDone,
+          nightDone: _nightDone,
+          morningStepCount: morningSteps.length,
+          nightStepCount: nightSteps.length,
+          morningCheckedCount: _visibleChecks(
+            _morningStepChecks,
+            morningSteps.length,
+          ).length,
+          nightCheckedCount: _visibleChecks(
+            _nightStepChecks,
+            nightSteps.length,
+          ).length,
+          expanded: _showDashboardDetails,
+          onToggleExpanded: () =>
+              setState(() => _showDashboardDetails = !_showDashboardDetails),
+        ),
+        const SizedBox(height: 12),
+        _RoutineWeekPlanner(
+          text: text,
+          days: widget.activeRoutine.week.checkIns,
+          selectedDate: _selectedDate,
+          onSelect: _selectDay,
         ),
         const SizedBox(height: 12),
         _RoutineReminderCard(text: text),
@@ -6605,7 +6609,7 @@ class _ActiveRoutinePlanBanner extends StatelessWidget {
         child: Row(
           children: [
             const SkinoImageIcon(
-              asset: SkinoAssets.iconProgress,
+              asset: SkinoAssets.iconRoutine,
               size: 52,
               padding: 5,
               backgroundColor: Color(0xFFFFF3EC),
@@ -6642,39 +6646,6 @@ class _ActiveRoutinePlanBanner extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 10),
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3EC),
-                borderRadius: BorderRadius.circular(999),
-                border: Border.all(color: const Color(0xFFFFCBAA)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      text.isMyanmar ? 'Plan' : 'Plan',
-                      style: const TextStyle(
-                        color: Color(0xFFF98128),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(width: 3),
-                    const Icon(
-                      Icons.chevron_right_rounded,
-                      color: Color(0xFFF98128),
-                      size: 17,
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -6692,6 +6663,8 @@ class _RoutineTodayDashboard extends StatelessWidget {
     required this.nightStepCount,
     required this.morningCheckedCount,
     required this.nightCheckedCount,
+    required this.expanded,
+    required this.onToggleExpanded,
   });
 
   final SkinoText text;
@@ -6702,6 +6675,8 @@ class _RoutineTodayDashboard extends StatelessWidget {
   final int nightStepCount;
   final int morningCheckedCount;
   final int nightCheckedCount;
+  final bool expanded;
+  final VoidCallback onToggleExpanded;
 
   @override
   Widget build(BuildContext context) {
@@ -6737,7 +6712,7 @@ class _RoutineTodayDashboard extends StatelessWidget {
           Row(
             children: [
               const SkinoImageIcon.page(
-                asset: SkinoAssets.iconProgress,
+                asset: SkinoAssets.iconReport,
                 size: 58,
                 backgroundColor: Colors.white,
                 borderRadius: 19,
@@ -6775,45 +6750,62 @@ class _RoutineTodayDashboard extends StatelessWidget {
                   ],
                 ),
               ),
+              IconButton(
+                tooltip: expanded
+                    ? (text.isMyanmar ? 'အကျဉ်းချုံ့မယ်' : 'Collapse')
+                    : (text.isMyanmar ? 'အသေးစိတ်ကြည့်မယ်' : 'Expand'),
+                onPressed: onToggleExpanded,
+                style: IconButton.styleFrom(
+                  backgroundColor: Colors.white.withValues(alpha: 0.12),
+                  foregroundColor: Colors.white,
+                ),
+                icon: Icon(
+                  expanded
+                      ? Icons.keyboard_arrow_up_rounded
+                      : Icons.keyboard_arrow_down_rounded,
+                ),
+              ),
               _DarkRoutineScore(score: score),
             ],
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _RoutineDashboardMetric(
-                label: text.isMyanmar ? 'ဒီနေ့' : 'Today',
-                value: '$todaySessions/2',
-                icon: Icons.check_circle_outline_rounded,
-              ),
-              const SizedBox(width: 8),
-              _RoutineDashboardMetric(
-                label: text.isMyanmar ? 'အပတ်' : 'Week',
-                value: '$completedDays/$totalDays',
-                icon: Icons.calendar_month_outlined,
-              ),
-              const SizedBox(width: 8),
-              _RoutineDashboardMetric(
-                label: text.isMyanmar ? 'စကင်' : 'Scan',
-                value: followUp.replaceFirst('Follow-up ', ''),
-                icon: Icons.center_focus_strong_outlined,
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          _RoutineProgressLine(
-            label: text.morningCare,
-            value: morningProgress,
-            done: morningDone,
-            accent: const Color(0xFFF98128),
-          ),
-          const SizedBox(height: 8),
-          _RoutineProgressLine(
-            label: text.nightCare,
-            value: nightProgress,
-            done: nightDone,
-            accent: const Color(0xFF7EF1CF),
-          ),
+          if (expanded) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                _RoutineDashboardMetric(
+                  label: text.isMyanmar ? 'ဒီနေ့' : 'Today',
+                  value: '$todaySessions/2',
+                  icon: Icons.check_circle_outline_rounded,
+                ),
+                const SizedBox(width: 8),
+                _RoutineDashboardMetric(
+                  label: text.isMyanmar ? 'အပတ်' : 'Week',
+                  value: '$completedDays/$totalDays',
+                  icon: Icons.calendar_month_outlined,
+                ),
+                const SizedBox(width: 8),
+                _RoutineDashboardMetric(
+                  label: text.isMyanmar ? 'စကင်' : 'Scan',
+                  value: followUp.replaceFirst('Follow-up ', ''),
+                  icon: Icons.center_focus_strong_outlined,
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            _RoutineProgressLine(
+              label: text.morningCare,
+              value: morningProgress,
+              done: morningDone,
+              accent: const Color(0xFFF98128),
+            ),
+            const SizedBox(height: 8),
+            _RoutineProgressLine(
+              label: text.nightCare,
+              value: nightProgress,
+              done: nightDone,
+              accent: const Color(0xFF7EF1CF),
+            ),
+          ],
         ],
       ),
     );
@@ -7132,7 +7124,7 @@ class _RoutineWeekPlanner extends StatelessWidget {
           Row(
             children: [
               const SkinoImageIcon(
-                asset: SkinoAssets.iconProgress,
+                asset: SkinoAssets.iconHistory,
                 size: 46,
                 padding: 4,
                 backgroundColor: Color(0xFFFFF3EC),
@@ -7851,10 +7843,17 @@ class _RoutineCheckStep extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: Color(0xFF282420),
-                fontWeight: FontWeight.w500,
+              style: TextStyle(
+                color: isDone
+                    ? const Color(0xFF8D8780)
+                    : const Color(0xFF282420),
+                fontWeight: isDone ? FontWeight.w500 : FontWeight.w600,
                 height: 1.2,
+                decoration: isDone
+                    ? TextDecoration.lineThrough
+                    : TextDecoration.none,
+                decorationColor: const Color(0xFF8D8780),
+                decorationThickness: 2,
               ),
             ),
           ),
