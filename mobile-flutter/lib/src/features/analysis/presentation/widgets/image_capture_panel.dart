@@ -50,24 +50,6 @@ class _ImageCapturePanelState extends State<ImageCapturePanel> {
   DateTime? _holdStartedAt;
   _ScanGateStatus _gateStatus = const _ScanGateStatus();
 
-  static const _guideSteps = [
-    _GuidedScanStep(
-      icon: Icons.face_retouching_natural_rounded,
-      title: 'Find your face',
-      subtitle: 'မျက်နှာတစ်ခုလုံး frame ထဲပါအောင်ထားပါ',
-    ),
-    _GuidedScanStep(
-      icon: Icons.light_mode_outlined,
-      title: 'Use even light',
-      subtitle: 'အလင်းညီအောင်ထားပြီး glare လျှော့ပါ',
-    ),
-    _GuidedScanStep(
-      icon: Icons.check_circle_outline_rounded,
-      title: 'Ready to capture',
-      subtitle: 'ဖုန်းကို မဝေးလွန်း မနီးလွန်း ကိုင်ပါ',
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -380,7 +362,7 @@ class _ImageCapturePanelState extends State<ImageCapturePanel> {
     if (!holdDone && !status.holdStillDone) {
       return 'ကောင်းပါတယ်။ ဖုန်းကို ခဏငြိမ်ထားပြီး capture လုပ်ပါ။';
     }
-    return 'Ready ပါပြီ။ Capture scan လုပ်နိုင်ပါပြီ။';
+    return 'Ready ပါပြီ။ နဖူးကို ဆံပင်မဖုံးအောင်ထားပြီး capture လုပ်ပါ။';
   }
 
   double _estimateBrightness(CameraImage image) {
@@ -448,16 +430,19 @@ class _ImageCapturePanelState extends State<ImageCapturePanel> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _ScanLensHeader(hasFrame: hasFrame),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
           if (!hasFrame) ...[
-            _GuidedScanStrip(
-              steps: _guideSteps,
-              currentStep: _guideStep,
-              status: _gateStatus,
+            _ScanReadinessMeter(status: _gateStatus),
+            const SizedBox(height: 10),
+            _ScanPrimaryActions(
+              hasFrame: hasFrame,
+              isLoading: widget.isLoading,
+              gateStatus: _gateStatus,
+              onCapture: _captureFrame,
+              onResetScanFrame: widget.onResetScanFrame,
+              onAnalyze: widget.onAnalyze,
             ),
             const SizedBox(height: 12),
-            _ScanReadinessMeter(status: _gateStatus),
-            const SizedBox(height: 14),
           ],
           AspectRatio(
             aspectRatio: 0.82,
@@ -483,16 +468,18 @@ class _ImageCapturePanelState extends State<ImageCapturePanel> {
               ),
             ),
           ),
-          const SizedBox(height: 14),
-          _ScanPrimaryActions(
-            hasFrame: hasFrame,
-            isLoading: widget.isLoading,
-            gateStatus: _gateStatus,
-            onCapture: _captureFrame,
-            onResetScanFrame: widget.onResetScanFrame,
-            onAnalyze: widget.onAnalyze,
-          ),
           const SizedBox(height: 12),
+          if (hasFrame) ...[
+            _ScanPrimaryActions(
+              hasFrame: hasFrame,
+              isLoading: widget.isLoading,
+              gateStatus: _gateStatus,
+              onCapture: _captureFrame,
+              onResetScanFrame: widget.onResetScanFrame,
+              onAnalyze: widget.onAnalyze,
+            ),
+            const SizedBox(height: 12),
+          ],
           if (hasFrame) ...[
             const _FrameReviewPanel(),
             const SizedBox(height: 12),
@@ -509,15 +496,6 @@ class _ImageCapturePanelState extends State<ImageCapturePanel> {
             enabled: widget.canShareForTraining && !widget.isLoading,
             value: widget.allowModelTraining,
             onChanged: widget.onAllowModelTrainingChanged,
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Face forward, use even light, and keep the phone steady for a cleaner health and beauty scan.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Color(0xFF625B53),
-              fontWeight: FontWeight.w500,
-            ),
           ),
           if (widget.error != null || _cameraError != null) ...[
             const SizedBox(height: 12),
@@ -1046,7 +1024,7 @@ class _ScanReadinessMeter extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = status.completedCount / 4;
     final label = status.canCapture
-        ? 'Ready for clean capture'
+        ? 'Ready • forehead clear?'
         : 'Scan readiness ${status.completedCount}/4';
 
     return Container(
@@ -1119,6 +1097,11 @@ class _CapturedReviewChecklist extends StatelessWidget {
           _ReviewCheckRow(
             title: 'Clear enough',
             subtitle: 'မလှုပ်ဘဲ focus ပြတ်သားရပါမယ်',
+          ),
+          SizedBox(height: 8),
+          _ReviewCheckRow(
+            title: 'Forehead visible',
+            subtitle: 'ဆံပင်/ဦးထုပ်/အရိပ်က နဖူးကို မဖုံးပါစေနဲ့',
           ),
         ],
       ),
@@ -1211,7 +1194,7 @@ class _ScanLensHeader extends StatelessWidget {
               Text(
                 hasFrame
                     ? 'Frame ကိုစစ်ပြီး result ကြည့်ပါ။'
-                    : 'အလင်းနဲ့ အကွာအဝေးကို စစ်ပြီး capture လုပ်ပါ။',
+                    : 'နဖူးကို ဆံပင်မဖုံးအောင်ထားပြီး capture လုပ်ပါ။',
                 style: const TextStyle(
                   color: Color(0xFF68625B),
                   fontWeight: FontWeight.w500,
@@ -1221,200 +1204,6 @@ class _ScanLensHeader extends StatelessWidget {
           ),
         ),
         _StatusPill(label: hasFrame ? 'Ready' : 'Quick guide'),
-      ],
-    );
-  }
-}
-
-class _GuidedScanStep {
-  const _GuidedScanStep({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-}
-
-class _GuidedScanStrip extends StatelessWidget {
-  const _GuidedScanStrip({
-    required this.steps,
-    required this.currentStep,
-    required this.status,
-  });
-
-  final List<_GuidedScanStep> steps;
-  final int currentStep;
-  final _ScanGateStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final step = steps[currentStep];
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF3EC),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFFFD0B3)),
-      ),
-      child: Row(
-        children: [
-          _VirtualFaceGuide(stepIndex: currentStep, status: status),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  step.title,
-                  style: const TextStyle(
-                    color: Color(0xFF282420),
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  step.subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFF625B53),
-                    fontWeight: FontWeight.w600,
-                    height: 1.25,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          _GuideProgressDots(
-            count: steps.length,
-            activeIndex: currentStep,
-            status: status,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _VirtualFaceGuide extends StatelessWidget {
-  const _VirtualFaceGuide({required this.stepIndex, required this.status});
-
-  final int stepIndex;
-  final _ScanGateStatus status;
-
-  @override
-  Widget build(BuildContext context) {
-    final arrowIcon = switch (stepIndex) {
-      1 => Icons.light_mode_rounded,
-      2 => Icons.check_rounded,
-      _ => Icons.center_focus_strong_rounded,
-    };
-    final faceIcon = switch (stepIndex) {
-      1 => Icons.light_mode_outlined,
-      2 => Icons.check_circle_outline_rounded,
-      _ => Icons.face_retouching_natural,
-    };
-
-    return SizedBox(
-      width: 58,
-      height: 58,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFFFD0B3)),
-            ),
-          ),
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 420),
-            curve: Curves.easeOutCubic,
-            left: 7,
-            top: 6,
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFEFE5),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFFFD0B3)),
-              ),
-              child: Icon(faceIcon, color: const Color(0xFFF47C22), size: 24),
-            ),
-          ),
-          Positioned(
-            right: 3,
-            bottom: 3,
-            child: CircleAvatar(
-              radius: 13,
-              backgroundColor: status.canCapture
-                  ? const Color(0xFF0E5C56)
-                  : const Color(0xFFF98128),
-              child: Icon(
-                status.canCapture ? Icons.check_rounded : arrowIcon,
-                color: Colors.white,
-                size: 17,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GuideProgressDots extends StatelessWidget {
-  const _GuideProgressDots({
-    required this.count,
-    required this.activeIndex,
-    required this.status,
-  });
-
-  final int count;
-  final int activeIndex;
-  final _ScanGateStatus status;
-
-  bool _doneFor(int index) {
-    return switch (index) {
-      0 => status.faceDetected,
-      1 => status.enoughLight,
-      2 => status.faceDistanceOk,
-      _ => false,
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var index = 0; index < count; index++) ...[
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
-            width: _doneFor(index) ? 17 : 7,
-            height: activeIndex == index ? 17 : 7,
-            decoration: BoxDecoration(
-              color: _doneFor(index)
-                  ? const Color(0xFF0E5C56)
-                  : activeIndex == index
-                  ? const Color(0xFFF98128)
-                  : const Color(0xFFFFD0B3),
-              shape: _doneFor(index) ? BoxShape.circle : BoxShape.rectangle,
-              borderRadius: _doneFor(index) ? null : BorderRadius.circular(99),
-            ),
-            child: _doneFor(index)
-                ? const Icon(Icons.check_rounded, color: Colors.white, size: 12)
-                : null,
-          ),
-          if (index != count - 1) const SizedBox(height: 4),
-        ],
       ],
     );
   }
@@ -1475,6 +1264,11 @@ class _ScanQualityChecklist extends StatelessWidget {
                 ? 'Angle OK'
                 : 'Face front',
             done: hasFrame || status.angleOk,
+          ),
+          _QualityChip(
+            icon: Icons.content_cut_rounded,
+            label: 'Hair off forehead',
+            done: hasFrame || status.canCapture,
           ),
           _QualityChip(
             icon: Icons.verified_rounded,
@@ -1741,7 +1535,7 @@ class _FaceGuideOverlay extends StatelessWidget {
               ),
               child: Text(
                 status.canCapture
-                    ? 'Ready: capture when your face looks clear'
+                    ? 'Ready: keep hair off forehead, then capture'
                     : status.message,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
