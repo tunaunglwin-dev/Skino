@@ -137,6 +137,12 @@ class _SkinoAppShellState extends State<SkinoAppShell> {
     _selectPage(3);
   }
 
+  void _openPlansPage(BuildContext context, SkinoText text) {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => _PlansPage(text: text)));
+  }
+
   SkinAnalysisResult? get _currentUsableScan =>
       widget.result ??
       (widget.scanHistory.isEmpty ? null : widget.scanHistory.first);
@@ -254,6 +260,7 @@ class _SkinoAppShellState extends State<SkinoAppShell> {
         onOpenScanHistory: () => _openScanHistory(context, text),
         onOpenSpecialist: () => _openSpecialistDirectory(context, text),
         onOpenHelpSafety: () => _openHelpSafetyPage(context, text),
+        onOpenPlans: () => _openPlansPage(context, text),
         onOpenLatestResult: _currentUsableScan == null
             ? null
             : () => Navigator.of(context).push(
@@ -373,6 +380,10 @@ class _SkinoAppShellState extends State<SkinoAppShell> {
         onOpenScanHistory: () {
           Navigator.of(context).pop();
           _openScanHistory(context, text);
+        },
+        onOpenPlans: () {
+          Navigator.of(context).pop();
+          _openPlansPage(context, text);
         },
         onOpenHelpSafety: () {
           Navigator.of(context).pop();
@@ -537,6 +548,7 @@ class _SkinoDrawer extends StatelessWidget {
     required this.onOpenSettings,
     required this.onOpenCare,
     required this.onOpenScanHistory,
+    required this.onOpenPlans,
     required this.onOpenHelpSafety,
     required this.onLogout,
   });
@@ -554,6 +566,7 @@ class _SkinoDrawer extends StatelessWidget {
   final VoidCallback onOpenSettings;
   final VoidCallback onOpenCare;
   final VoidCallback onOpenScanHistory;
+  final VoidCallback onOpenPlans;
   final VoidCallback onOpenHelpSafety;
   final VoidCallback onLogout;
 
@@ -647,6 +660,14 @@ class _SkinoDrawer extends StatelessWidget {
               title: text.analysisHistory,
               subtitle: text.analysisHistorySubtitle,
               onTap: onOpenScanHistory,
+            ),
+            _DrawerItem(
+              icon: Icons.workspace_premium_outlined,
+              title: text.isMyanmar ? 'Plans' : 'Plans',
+              subtitle: text.isMyanmar
+                  ? 'Scan package demo pricing'
+                  : 'Demo pricing for scan packages',
+              onTap: onOpenPlans,
             ),
             _DrawerItem(
               icon: Icons.health_and_safety_outlined,
@@ -854,6 +875,7 @@ class _HomePage extends StatelessWidget {
     required this.onOpenScanHistory,
     required this.onOpenSpecialist,
     required this.onOpenHelpSafety,
+    required this.onOpenPlans,
     required this.onOpenLatestResult,
     required this.activeRoutine,
   });
@@ -866,6 +888,7 @@ class _HomePage extends StatelessWidget {
   final VoidCallback onOpenScanHistory;
   final VoidCallback onOpenSpecialist;
   final VoidCallback onOpenHelpSafety;
+  final VoidCallback onOpenPlans;
   final VoidCallback? onOpenLatestResult;
   final ActiveRoutine? activeRoutine;
 
@@ -882,6 +905,8 @@ class _HomePage extends StatelessWidget {
           onOpenSpecialist: onOpenSpecialist,
           onOpenHelpSafety: onOpenHelpSafety,
         ),
+        const SizedBox(height: 14),
+        _PlanPreviewCard(text: text, onOpenPlans: onOpenPlans),
         if (result != null || activeRoutine != null) ...[
           const SizedBox(height: 14),
           _HomeTodayCareCard(
@@ -899,6 +924,762 @@ class _HomePage extends StatelessWidget {
           onOpenResult: onOpenLatestResult,
         ),
       ],
+    );
+  }
+}
+
+class _PlanPreviewCard extends StatelessWidget {
+  const _PlanPreviewCard({required this.text, required this.onOpenPlans});
+
+  final SkinoText text;
+  final VoidCallback onOpenPlans;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7EE),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFFFD8BA)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x10F98128),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          const SkinoImageIcon(
+            asset: SkinoAssets.logo,
+            size: 70,
+            padding: 0,
+            backgroundColor: Colors.white,
+            borderRadius: 22,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  text.isMyanmar ? 'Choose Your Plan' : 'Choose Your Plan',
+                  style: const TextStyle(
+                    color: Color(0xFF2D1E16),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  text.isMyanmar
+                      ? 'Trial, scan packs, premium demo pricing'
+                      : 'Trial, scan packs, and premium demo pricing',
+                  style: const TextStyle(
+                    color: Color(0xFF75685E),
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          SizedBox(
+            width: 74,
+            child: FilledButton(
+              onPressed: onOpenPlans,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFF98128),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+              ),
+              child: const Text('View'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlansPage extends StatelessWidget {
+  const _PlansPage({required this.text});
+
+  final SkinoText text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFFFBF7),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFFFFBF7),
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        foregroundColor: const Color(0xFF2D1E16),
+        title: Text(
+          text.isMyanmar ? 'Choose Your Plan' : 'Choose Your Plan',
+          style: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+      body: _PageScaffold(
+        children: [
+          _PlansHero(text: text),
+          const SizedBox(height: 16),
+          _TrialPlanCard(text: text),
+          const SizedBox(height: 20),
+          _PlanSectionTitle(
+            number: '2',
+            title: text.isMyanmar
+                ? 'Pay As You Go Plans'
+                : 'Pay As You Go Plans',
+            color: const Color(0xFF3D8B38),
+          ),
+          const SizedBox(height: 12),
+          _PlanCard(
+            name: 'Basic',
+            scans: '5 scans',
+            price: '3,000 MMK',
+            color: const Color(0xFF4FA23C),
+            icon: Icons.shield_rounded,
+            features: const [
+              '5 face scans',
+              'Valid for 7 days',
+              'For personal use',
+            ],
+            buttonLabel: 'Choose Basic',
+            onChoose: () => _showDemoPlanNotice(context, text),
+          ),
+          const SizedBox(height: 12),
+          _PlanCard(
+            name: 'Standard',
+            badge: 'MOST POPULAR',
+            scans: '12 scans',
+            price: '8,000 MMK',
+            color: const Color(0xFFF98128),
+            icon: Icons.local_fire_department_rounded,
+            features: const [
+              '12 face scans',
+              'Valid for 14 days',
+              'For regular care',
+            ],
+            buttonLabel: 'Choose Standard',
+            onChoose: () => _showDemoPlanNotice(context, text),
+          ),
+          const SizedBox(height: 12),
+          _PlanCard(
+            name: 'Premium',
+            scans: 'Unlimited scans',
+            price: '10,000 MMK',
+            color: const Color(0xFF8B3FD1),
+            icon: Icons.workspace_premium_rounded,
+            features: const [
+              'Unlimited face scans',
+              'Valid for 30 days',
+              'Priority access to new features',
+              'AI chatbot memory demo',
+              'Future booking discounts',
+            ],
+            buttonLabel: 'Choose Premium',
+            onChoose: () => _showDemoPlanNotice(context, text),
+          ),
+          const SizedBox(height: 20),
+          _PlanSectionTitle(
+            number: '3',
+            title: text.isMyanmar ? 'For Premium Lovers' : 'For Premium Lovers',
+            color: const Color(0xFF2F7ECB),
+          ),
+          const SizedBox(height: 12),
+          _PremiumLoversCard(text: text),
+          const SizedBox(height: 12),
+          _PlanPrivacyNote(text: text),
+        ],
+      ),
+    );
+  }
+}
+
+void _showDemoPlanNotice(BuildContext context, SkinoText text) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        text.isMyanmar
+            ? 'Demo UI only: payment/backend ကိုနောက်မှချိတ်ပါမယ်။'
+            : 'Demo UI only: payment and backend will be connected later.',
+      ),
+    ),
+  );
+}
+
+class _PlansHero extends StatelessWidget {
+  const _PlansHero({required this.text});
+
+  final SkinoText text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFF2E6), Color(0xFFEAF7F1)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFFFD8BA)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  text.isMyanmar ? 'Choose Your Plan' : 'Choose Your Plan',
+                  style: const TextStyle(
+                    color: Color(0xFF2D1E16),
+                    fontSize: 30,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  text.isMyanmar
+                      ? 'Pick the plan that fits your skin journey'
+                      : 'Pick the plan that fits your skin journey',
+                  style: const TextStyle(
+                    color: Color(0xFF75685E),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          const SkinoImageIcon(
+            asset: SkinoAssets.logo,
+            size: 92,
+            padding: 0,
+            backgroundColor: Colors.white,
+            borderRadius: 30,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanSectionTitle extends StatelessWidget {
+  const _PlanSectionTitle({
+    required this.number,
+    required this.title,
+    required this.color,
+  });
+
+  final String number;
+  final String title;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 18,
+          backgroundColor: color,
+          child: Text(
+            number,
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFF2D1E16),
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TrialPlanCard extends StatelessWidget {
+  const _TrialPlanCard({required this.text});
+
+  final SkinoText text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        _PlanSectionTitle(
+          number: '1',
+          title: text.isMyanmar ? 'Free Plan (Trial)' : 'Free Plan (Trial)',
+          color: const Color(0xFFF98128),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFFFD8BA)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x10F98128),
+                blurRadius: 20,
+                offset: Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  const SkinoImageIcon(
+                    asset: SkinoAssets.iconScan,
+                    size: 78,
+                    padding: 8,
+                    backgroundColor: Color(0xFFFFF2E6),
+                    borderRadius: 24,
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Free 1 Face Scan',
+                          style: TextStyle(
+                            color: Color(0xFFF05A13),
+                            fontSize: 23,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 5),
+                        Text(
+                          'Create an account and get 1 free scan.',
+                          style: TextStyle(
+                            color: Color(0xFF43352D),
+                            fontWeight: FontWeight.w700,
+                            height: 1.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text(
+                    '0 MMK',
+                    style: TextStyle(
+                      color: Color(0xFFF05A13),
+                      fontSize: 26,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: const [
+                  _PlanFeatureChip(
+                    label: '1 face scan',
+                    color: Color(0xFF5FAE41),
+                  ),
+                  _PlanFeatureChip(
+                    label: 'Valid for 1 day',
+                    color: Color(0xFFF98128),
+                  ),
+                  _PlanFeatureChip(
+                    label: 'Create account',
+                    color: Color(0xFF5FAE41),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => _showDemoPlanNotice(context, text),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFF98128),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                  ),
+                  child: const Text('Get Started'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({
+    required this.name,
+    required this.scans,
+    required this.price,
+    required this.color,
+    required this.icon,
+    required this.features,
+    required this.buttonLabel,
+    required this.onChoose,
+    this.badge,
+  });
+
+  final String name;
+  final String scans;
+  final String price;
+  final Color color;
+  final IconData icon;
+  final List<String> features;
+  final String buttonLabel;
+  final VoidCallback onChoose;
+  final String? badge;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withValues(alpha: 0.28), width: 1.4),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F4B2F1F),
+            blurRadius: 18,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (badge != null) ...[
+            Align(
+              alignment: Alignment.center,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  badge!,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: color.withValues(alpha: 0.12),
+                child: Icon(icon, color: color, size: 30),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  name,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.09),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: color.withValues(alpha: 0.2)),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  scans,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  price,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+          for (final feature in features)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _PlanCheckRow(label: feature, color: color),
+            ),
+          const SizedBox(height: 8),
+          FilledButton(
+            onPressed: onChoose,
+            style: FilledButton.styleFrom(
+              backgroundColor: color,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 13),
+            ),
+            child: Text(buttonLabel),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PremiumLoversCard extends StatelessWidget {
+  const _PremiumLoversCard({required this.text});
+
+  final SkinoText text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFD7E4F7)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const SkinoImageIcon(
+                asset: SkinoAssets.logo,
+                size: 62,
+                padding: 0,
+                backgroundColor: Color(0xFFFFF1E8),
+                borderRadius: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  text.isMyanmar
+                      ? 'More scans, stronger care, better demo story for premium users.'
+                      : 'More scans, stronger care, better demo story for premium users.',
+                  style: const TextStyle(
+                    color: Color(0xFF263B57),
+                    fontWeight: FontWeight.w800,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          const Row(
+            children: [
+              Expanded(
+                child: _PlanMiniBenefit(
+                  icon: Icons.card_giftcard_rounded,
+                  label: 'Best value',
+                  color: Color(0xFFF98128),
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: _PlanMiniBenefit(
+                  icon: Icons.lock_outline_rounded,
+                  label: 'Private data',
+                  color: Color(0xFF3B8F65),
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: _PlanMiniBenefit(
+                  icon: Icons.workspace_premium_rounded,
+                  label: 'Premium care',
+                  color: Color(0xFF8B3FD1),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanPrivacyNote extends StatelessWidget {
+  const _PlanPrivacyNote({required this.text});
+
+  final SkinoText text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E8),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFDCC4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.verified_user_rounded, color: Color(0xFF5FAE41)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text.isMyanmar
+                  ? 'Your skin, your data. Demo screen only, no payment is processed.'
+                  : 'Your skin, your data. Demo screen only, no payment is processed.',
+              style: const TextStyle(
+                color: Color(0xFF5C4D44),
+                fontWeight: FontWeight.w800,
+                height: 1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanFeatureChip extends StatelessWidget {
+  const _PlanFeatureChip({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.check_circle_rounded, color: color, size: 17),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF4C4038),
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PlanCheckRow extends StatelessWidget {
+  const _PlanCheckRow({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(Icons.check_circle_rounded, color: color, size: 19),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF4C4038),
+              fontWeight: FontWeight.w700,
+              height: 1.25,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PlanMiniBenefit extends StatelessWidget {
+  const _PlanMiniBenefit({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.18)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Color(0xFF4C4038),
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -1060,6 +1841,94 @@ class _BuddyPageState extends State<_BuddyPage> {
     });
   }
 
+  void _showChatHistory() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.58,
+          minChildSize: 0.34,
+          maxChildSize: 0.88,
+          builder: (context, controller) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFFFFBF7),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 42,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE4D6CA),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.history_rounded,
+                          color: Color(0xFFF98128),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.text.isMyanmar
+                                    ? 'Chat history'
+                                    : 'Chat history',
+                                style: const TextStyle(
+                                  color: Color(0xFF282420),
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                widget.text.isMyanmar
+                                    ? 'This session only. Backend memory is future premium work.'
+                                    : 'This session only. Backend memory is future premium work.',
+                                style: const TextStyle(
+                                  color: Color(0xFF75685E),
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.25,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.separated(
+                      controller: controller,
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                      itemBuilder: (context, index) {
+                        final message = _messages[index];
+                        return _BuddyHistoryTile(message: message);
+                      },
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemCount: _messages.length,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasRoutine = widget.activeRoutine != null;
@@ -1104,6 +1973,8 @@ class _BuddyPageState extends State<_BuddyPage> {
                 hasScan: hasScan,
                 hasRoutine: hasRoutine,
                 canChat: canChat,
+                messageCount: _messages.length,
+                onOpenHistory: _showChatHistory,
               ),
               const SizedBox(height: 16),
               Wrap(
@@ -1243,12 +2114,16 @@ class _BuddyHeader extends StatelessWidget {
     required this.hasScan,
     required this.hasRoutine,
     required this.canChat,
+    required this.messageCount,
+    required this.onOpenHistory,
   });
 
   final SkinoText text;
   final bool hasScan;
   final bool hasRoutine;
   final bool canChat;
+  final int messageCount;
+  final VoidCallback onOpenHistory;
 
   @override
   Widget build(BuildContext context) {
@@ -1337,6 +2212,82 @@ class _BuddyHeader extends StatelessWidget {
                       active: hasRoutine,
                     ),
                   ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            tooltip: text.isMyanmar ? 'Chat history' : 'Chat history',
+            onPressed: onOpenHistory,
+            style: IconButton.styleFrom(
+              backgroundColor: Colors.white.withValues(alpha: 0.78),
+              foregroundColor: const Color(0xFFF98128),
+            ),
+            icon: Badge.count(
+              count: messageCount,
+              isLabelVisible: messageCount > 1,
+              child: const Icon(Icons.history_rounded),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BuddyHistoryTile extends StatelessWidget {
+  const _BuddyHistoryTile({required this.message});
+
+  final _BuddyMessage message;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = message.isUser
+        ? const Color(0xFFF98128)
+        : const Color(0xFF3B8F65);
+    return Container(
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: color.withValues(alpha: 0.12),
+            child: Icon(
+              message.isUser
+                  ? Icons.person_rounded
+                  : Icons.auto_awesome_rounded,
+              color: color,
+              size: 18,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  message.isUser ? 'You' : 'Skino Buddy',
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  message.content,
+                  style: const TextStyle(
+                    color: Color(0xFF4E4741),
+                    fontWeight: FontWeight.w700,
+                    height: 1.35,
+                  ),
                 ),
               ],
             ),
