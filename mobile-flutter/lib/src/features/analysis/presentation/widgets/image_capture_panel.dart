@@ -433,19 +433,10 @@ class _ImageCapturePanelState extends State<ImageCapturePanel> {
           const SizedBox(height: 10),
           if (!hasFrame) ...[
             _ScanReadinessMeter(status: _gateStatus),
-            const SizedBox(height: 10),
-            _ScanPrimaryActions(
-              hasFrame: hasFrame,
-              isLoading: widget.isLoading,
-              gateStatus: _gateStatus,
-              onCapture: _captureFrame,
-              onResetScanFrame: widget.onResetScanFrame,
-              onAnalyze: widget.onAnalyze,
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
           ],
           AspectRatio(
-            aspectRatio: 0.82,
+            aspectRatio: 0.9,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(28),
               child: Stack(
@@ -468,18 +459,16 @@ class _ImageCapturePanelState extends State<ImageCapturePanel> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          if (hasFrame) ...[
-            _ScanPrimaryActions(
-              hasFrame: hasFrame,
-              isLoading: widget.isLoading,
-              gateStatus: _gateStatus,
-              onCapture: _captureFrame,
-              onResetScanFrame: widget.onResetScanFrame,
-              onAnalyze: widget.onAnalyze,
-            ),
-            const SizedBox(height: 12),
-          ],
+          const SizedBox(height: 10),
+          _ScanPrimaryActions(
+            hasFrame: hasFrame,
+            isLoading: widget.isLoading,
+            gateStatus: _gateStatus,
+            onCapture: _captureFrame,
+            onResetScanFrame: widget.onResetScanFrame,
+            onAnalyze: widget.onAnalyze,
+          ),
+          const SizedBox(height: 10),
           if (hasFrame) ...[
             const _FrameReviewPanel(),
             const SizedBox(height: 12),
