@@ -758,7 +758,7 @@ class _SkinoOnboardingState extends State<_SkinoOnboarding> {
         asset: SkinoAssets.iconReport,
         title: 'AI Face Scan Consent',
         body:
-            'Your face scan may reveal sensitive skin and biometric information. Skino uses it only to analyze visible skin concerns, show your result, and create care guidance. We do not sell your face scan. You control whether a logged-in scan can help improve Skino AI, and you can ask us to review or delete your data.',
+            'သင့်မျက်နှာ scan data သည် အလွန်ကိုယ်ရေးကိုယ်တာဆိုင်ရာ skin နှင့် biometric information ပါဝင်နိုင်ပါတယ်။ Skino က visible skin concern တွေကို analyse လုပ်ရန်၊ result ပြရန်နှင့် care guidance ပေးရန်အတွက်သာ အသုံးပြုပါတယ်။ သင့် face scan ကို မရောင်းချပါ။ Login ဝင်ထားသော scan data ကို Skino AI တိုးတက်စေရန် အသုံးပြုခွင့်ကို သင်ကိုယ်တိုင် ထိန်းချုပ်နိုင်ပြီး data review/delete လုပ်ရန် တောင်းဆိုနိုင်ပါတယ်။\n\nYour face scan may reveal sensitive skin and biometric information. Skino uses it only for skin analysis, result display, and care guidance.',
         consent: _AiConsentBox(
           accepted: _acceptedAiConsent,
           onChanged: (value) =>
@@ -781,14 +781,12 @@ class _SkinoOnboardingState extends State<_SkinoOnboarding> {
                   Container(
                     width: 46,
                     height: 46,
+                    clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFE3D1),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const Icon(
-                      Icons.water_drop_outlined,
-                      color: Color(0xFFF98128),
-                    ),
+                    child: Image.asset(SkinoAssets.logo, fit: BoxFit.cover),
                   ),
                   const SizedBox(width: 12),
                   const Text(
@@ -966,7 +964,7 @@ class _AiConsentBox extends StatelessWidget {
             const SizedBox(width: 6),
             const Expanded(
               child: Text(
-                'I understand Skino will use my face scan for AI skin analysis and care guidance. I consent to this processing and understand this demo is not medical advice.',
+                'Skino က ကျွန်ုပ်၏ face scan ကို AI skin analysis နှင့် care guidance အတွက် အသုံးပြုမည်ကို နားလည်ပြီး သဘောတူပါသည်။ ဒီ demo သည် medical advice မဟုတ်ကြောင်းလည်း နားလည်ပါသည်။\n\nI understand Skino will use my face scan for AI skin analysis and care guidance. I consent to this processing and understand this demo is not medical advice.',
                 style: TextStyle(
                   color: Color(0xFF433D37),
                   fontSize: 13,
