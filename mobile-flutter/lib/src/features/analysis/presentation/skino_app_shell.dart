@@ -424,13 +424,11 @@ class _SkinoAppShellState extends State<SkinoAppShell> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    text.isMyanmar
-                        ? 'သင့်အသားအရေ AI assistant'
-                        : 'Your AI skin care assistant',
+                  const Text(
+                    'Meet Your AI Skincare Bestie',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Color(0xFF7A7169),
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
@@ -973,7 +971,7 @@ class _PlanPreviewCard extends StatelessWidget {
                   style: const TextStyle(
                     color: Color(0xFF2D1E16),
                     fontSize: 18,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1025,7 +1023,7 @@ class _PlansPage extends StatelessWidget {
         foregroundColor: const Color(0xFF2D1E16),
         title: Text(
           text.isMyanmar ? 'Choose Your Plan' : 'Choose Your Plan',
-          style: const TextStyle(fontWeight: FontWeight.w900),
+          style: const TextStyle(fontWeight: FontWeight.w700),
         ),
       ),
       body: _PageScaffold(
@@ -1158,7 +1156,7 @@ class _PlansHero extends StatelessWidget {
                   style: const TextStyle(
                     color: Color(0xFF2D1E16),
                     fontSize: 29,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -1169,7 +1167,7 @@ class _PlansHero extends StatelessWidget {
                   style: const TextStyle(
                     color: Color(0xFF75685E),
                     fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -1290,7 +1288,7 @@ class _PlanStoryPill extends StatelessWidget {
             style: TextStyle(
               color: color,
               fontSize: 12,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 2),
@@ -1332,7 +1330,7 @@ class _PlanSectionTitle extends StatelessWidget {
             number,
             style: const TextStyle(
               color: Colors.white,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -1343,7 +1341,7 @@ class _PlanSectionTitle extends StatelessWidget {
             style: const TextStyle(
               color: Color(0xFF2D1E16),
               fontSize: 20,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -1402,7 +1400,7 @@ class _TrialPlanCard extends StatelessWidget {
                           style: TextStyle(
                             color: Color(0xFFF05A13),
                             fontSize: 23,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         SizedBox(height: 5),
@@ -1434,7 +1432,7 @@ class _TrialPlanCard extends StatelessWidget {
                       style: TextStyle(
                         color: Color(0xFFF05A13),
                         fontSize: 20,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                         height: 1.02,
                       ),
                     ),
@@ -1546,7 +1544,7 @@ class _PlanCard extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 11,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -1576,7 +1574,7 @@ class _PlanCard extends StatelessWidget {
                       style: TextStyle(
                         color: color,
                         fontSize: 24,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -1589,7 +1587,7 @@ class _PlanCard extends StatelessWidget {
                       style: const TextStyle(
                         color: Color(0xFF74685F),
                         fontSize: 12,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                         height: 1.2,
                       ),
                     ),
@@ -1621,7 +1619,7 @@ class _PlanCard extends StatelessWidget {
                   style: TextStyle(
                     color: color,
                     fontSize: 28,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1631,7 +1629,7 @@ class _PlanCard extends StatelessWidget {
                   style: const TextStyle(
                     color: Color(0xFF5D5149),
                     fontSize: 14,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
@@ -1699,7 +1697,7 @@ class _PremiumLoversCard extends StatelessWidget {
                       : 'More scans, stronger care, better demo story for premium users.',
                   style: const TextStyle(
                     color: Color(0xFF263B57),
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     height: 1.35,
                   ),
                 ),
@@ -1765,7 +1763,7 @@ class _PlanPrivacyNote extends StatelessWidget {
                   : 'Your skin, your data. Demo screen only, no payment is processed.',
               style: const TextStyle(
                 color: Color(0xFF5C4D44),
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 height: 1.3,
               ),
             ),
@@ -1801,7 +1799,7 @@ class _PlanFeatureChip extends StatelessWidget {
             style: const TextStyle(
               color: Color(0xFF4C4038),
               fontSize: 12,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -1869,7 +1867,7 @@ class _PlanMiniBenefit extends StatelessWidget {
             style: const TextStyle(
               color: Color(0xFF4C4038),
               fontSize: 11,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               height: 1.2,
             ),
           ),
@@ -2083,7 +2081,7 @@ class _BuddyPageState extends State<_BuddyPage> {
                                 style: const TextStyle(
                                   color: Color(0xFF282420),
                                   fontSize: 20,
-                                  fontWeight: FontWeight.w900,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -2190,7 +2188,7 @@ class _BuddyPageState extends State<_BuddyPage> {
                         side: const BorderSide(color: Color(0xFFFFDCC4)),
                         labelStyle: const TextStyle(
                           color: Color(0xFF6E4B32),
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                         label: Text(prompt),
                       ),
@@ -2369,7 +2367,7 @@ class _BuddyHeader extends StatelessWidget {
                   style: const TextStyle(
                     color: Color(0xFF282420),
                     fontSize: 21,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 5),
@@ -2472,7 +2470,7 @@ class _BuddyHistoryTile extends StatelessWidget {
                   style: TextStyle(
                     color: color,
                     fontSize: 12,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -2515,7 +2513,7 @@ class _BuddyStatusPill extends StatelessWidget {
         style: TextStyle(
           color: active ? const Color(0xFF287050) : const Color(0xFF9A4D28),
           fontSize: 11,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -2631,7 +2629,7 @@ class _BuddyTypingBubble extends StatelessWidget {
               'Thinking',
               style: TextStyle(
                 color: Color(0xFF7C6555),
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -3218,7 +3216,7 @@ class _HomeScoreBadge extends StatelessWidget {
         style: TextStyle(
           color: score == null ? const Color(0xFFF98128) : Colors.white,
           fontSize: 18,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -3398,7 +3396,7 @@ class _PromoCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                               fontSize: 19,
                               height: 1.1,
                             ),
@@ -3813,7 +3811,7 @@ class _ScanContextStrip extends StatelessWidget {
                     scanLabel,
                     style: const TextStyle(
                       color: Color(0xFF282420),
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 3),
@@ -3850,7 +3848,7 @@ class _ScanContextStrip extends StatelessWidget {
                       style: const TextStyle(
                         color: Color(0xFF0E5C56),
                         fontSize: 12,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -4043,7 +4041,7 @@ class _ResultNextStepStrip extends StatelessWidget {
               label,
               style: const TextStyle(
                 color: Color(0xFF123C36),
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -4439,7 +4437,7 @@ class _ResultChangeExplanationCard extends StatelessWidget {
                       : 'Why this result may have changed',
                   style: const TextStyle(
                     color: Color(0xFF282420),
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -4549,7 +4547,7 @@ class _QualityShiftRow extends StatelessWidget {
             style: const TextStyle(
               color: Color(0xFF68625B),
               fontSize: 12,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -4575,7 +4573,7 @@ class _QualityShiftRow extends StatelessWidget {
                   ? const Color(0xFF0E5C56)
                   : const Color(0xFF9E2732),
               fontSize: 12,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -4634,7 +4632,7 @@ class _SkinMapEntryCard extends StatelessWidget {
                       style: const TextStyle(
                         color: Color(0xFF282420),
                         fontSize: 16,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -4699,7 +4697,7 @@ class _SkinMapMiniRow extends StatelessWidget {
             style: TextStyle(
               color: area.color,
               fontSize: 13,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),
@@ -4714,7 +4712,7 @@ class _SkinMapMiniRow extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Color(0xFF282420),
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 2),
@@ -5107,7 +5105,7 @@ class _FaceZonePainter extends CustomPainter {
         style: TextStyle(
           color: color,
           fontSize: 12,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -5228,7 +5226,7 @@ class _SkinMapAreaRow extends StatelessWidget {
                   style: TextStyle(
                     color: area.color,
                     fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const Text(
@@ -5342,7 +5340,7 @@ class _ZoneDetailHeader extends StatelessWidget {
               style: TextStyle(
                 color: area.color,
                 fontSize: 24,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -5356,7 +5354,7 @@ class _ZoneDetailHeader extends StatelessWidget {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 5),
@@ -5449,7 +5447,7 @@ class _ZoneSignalRow extends StatelessWidget {
           child: Text(
             '$percent%',
             textAlign: TextAlign.end,
-            style: TextStyle(color: signal.color, fontWeight: FontWeight.w800),
+            style: TextStyle(color: signal.color, fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -5945,7 +5943,7 @@ class _StartRoutineCard extends StatelessWidget {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 textStyle: const TextStyle(
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   fontSize: 15,
                 ),
               ),
@@ -6313,7 +6311,7 @@ class _RoutineStarterPreview extends StatelessWidget {
                       : 'Start this routine, then compare with a follow-up scan in $followUpDays days.',
                   style: const TextStyle(
                     color: Color(0xFF282420),
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     height: 1.32,
                   ),
                 ),
@@ -6383,7 +6381,7 @@ class _RoutineStarterColumn extends StatelessWidget {
                     style: const TextStyle(
                       color: Color(0xFF282420),
                       fontSize: 12,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -6935,7 +6933,7 @@ class _RoutineTodayDashboard extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -7111,7 +7109,7 @@ class _RoutineNextActionCard extends StatelessWidget {
                   style: const TextStyle(
                     color: Color(0xFF282420),
                     fontSize: 16,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 3),
@@ -7166,7 +7164,7 @@ class _DarkRoutineScore extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 19,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
               height: 1,
             ),
           ),
@@ -7219,7 +7217,7 @@ class _RoutineDashboardMetric extends StatelessWidget {
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 15,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w700,
               ),
             ),
             Text(
@@ -7265,7 +7263,7 @@ class _RoutineProgressLine extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 12,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),
@@ -7346,7 +7344,7 @@ class _RoutineWeekPlanner extends StatelessWidget {
                       style: const TextStyle(
                         color: Color(0xFF282420),
                         fontSize: 16,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -7438,7 +7436,7 @@ class _RoutineDayCell extends StatelessWidget {
               style: TextStyle(
                 color: foreground,
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 5),
@@ -7694,7 +7692,7 @@ class _TinyTimeChip extends StatelessWidget {
                     ? const Color(0xFF282420)
                     : const Color(0xFF8D857C),
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -7821,7 +7819,7 @@ class _RoutineMomentButton extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: selected ? Colors.white : const Color(0xFF282420),
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                   fontSize: 13,
                 ),
               ),
@@ -7954,7 +7952,7 @@ class _RoutineTimeBlock extends StatelessWidget {
                         color: allStepsDone || isDone
                             ? const Color(0xFF0E5C56)
                             : const Color(0xFFF98128),
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -8025,7 +8023,7 @@ class _RoutineCheckStep extends StatelessWidget {
                     '$index',
                     style: const TextStyle(
                       color: Color(0xFFF98128),
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
           ),
@@ -8339,7 +8337,7 @@ class _CompareReportPage extends StatelessWidget {
                             style: const TextStyle(
                               color: Color(0xFF282420),
                               fontSize: 18,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -8401,7 +8399,7 @@ class _CompareReportPage extends StatelessWidget {
                   style: const TextStyle(
                     color: Color(0xFF282420),
                     fontSize: 16,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -8533,7 +8531,7 @@ class _CompareScoreChartPainter extends CustomPainter {
         style: const TextStyle(
           color: Color(0xFF123C36),
           fontSize: 13,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
         ),
       ),
       textDirection: TextDirection.ltr,
@@ -8597,7 +8595,7 @@ class _CompareScoreTile extends StatelessWidget {
                   ? const Color(0xFFF98128)
                   : const Color(0xFF0E5C56),
               fontSize: 24,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w700,
             ),
           ),
           const SizedBox(height: 2),
@@ -8813,7 +8811,7 @@ class _RoutineTrackingMetric extends StatelessWidget {
                     style: const TextStyle(
                       color: Color(0xFF123C36),
                       fontSize: 15,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ],
@@ -9167,7 +9165,7 @@ class _ScanHistoryFilterBar extends StatelessWidget {
               color: selected == item.$1
                   ? const Color(0xFF8A3A08)
                   : const Color(0xFF625B53),
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
             side: BorderSide(
@@ -9260,7 +9258,7 @@ class _ScanHistoryCard extends StatelessWidget {
                           style: const TextStyle(
                             color: Color(0xFF282420),
                             fontSize: 15,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 3),
@@ -10614,7 +10612,7 @@ class _AppointmentScanSourcePicker extends StatelessWidget {
                 : 'Choose scan for appointment',
             style: const TextStyle(
               color: Color(0xFF282420),
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 8),
@@ -10830,7 +10828,7 @@ class _NextScanReminderCardState extends State<_NextScanReminderCard> {
                       style: const TextStyle(
                         color: Color(0xFF282420),
                         fontSize: 16,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -10871,7 +10869,7 @@ class _NextScanReminderCardState extends State<_NextScanReminderCard> {
                     color: _days == day
                         ? const Color(0xFFF98128)
                         : const Color(0xFF68625B),
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                   side: BorderSide(
                     color: _days == day
@@ -10974,7 +10972,7 @@ class _SimpleDataControlCardState extends State<_SimpleDataControlCard> {
                       style: const TextStyle(
                         color: Color(0xFF282420),
                         fontSize: 16,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 3),

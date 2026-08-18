@@ -160,7 +160,7 @@ class _ResultHero extends StatelessWidget {
                   style: const TextStyle(
                     color: Color(0xFF282420),
                     fontSize: 17,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     height: 1.18,
                   ),
                 ),
@@ -403,7 +403,7 @@ class _ResultInfoChip extends StatelessWidget {
             style: TextStyle(
               color: tone,
               fontSize: 12,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

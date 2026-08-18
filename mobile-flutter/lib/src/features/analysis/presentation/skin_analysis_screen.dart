@@ -530,7 +530,7 @@ class _WelcomeBackBanner extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Color(0xFF282420),
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -665,7 +665,7 @@ class _LoadingCompanion extends StatelessWidget {
               style: TextStyle(
                 color: Color(0xFFF98128),
                 fontSize: 12,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 14),

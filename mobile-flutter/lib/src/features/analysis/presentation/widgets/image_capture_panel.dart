@@ -587,7 +587,7 @@ class _AiAnalysisSequenceState extends State<_AiAnalysisSequence>
                       'Skino AI is reading your scan',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         color: const Color(0xFF282420),
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -667,7 +667,7 @@ class _AiAnalysisStepRow extends StatelessWidget {
                   color: isActive || isDone
                       ? const Color(0xFF282420)
                       : const Color(0xFF8A837B),
-                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 1),
@@ -1050,7 +1050,7 @@ class _ScanReadinessMeter extends StatelessWidget {
             style: const TextStyle(
               color: Color(0xFF625B53),
               fontSize: 12,
-              fontWeight: FontWeight.w800,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -1118,7 +1118,7 @@ class _ReviewCheckRow extends StatelessWidget {
                 title,
                 style: const TextStyle(
                   color: Color(0xFF123C36),
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 1),
@@ -1600,7 +1600,7 @@ class _FrameHintPill extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontSize: 12,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
