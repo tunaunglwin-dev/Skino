@@ -13,11 +13,12 @@ import careMascot from './assets/branding/skino_little_guy_care.png'
 const activeView = ref('home')
 const isLoggedIn = ref(false)
 
-const navItems = [
+const publicNavItems = [
   { label: 'Home', view: 'home', target: 'home' },
   { label: 'Services', view: 'services', target: 'services' },
   { label: 'About us', view: 'about', target: 'about' },
   { label: 'Contact', view: 'contact', target: 'contact' },
+  { label: 'Login', view: 'login' },
 ]
 
 const howSteps = [
@@ -91,7 +92,7 @@ function openView(view) {
     return
   }
 
-  const target = navItems.find((item) => item.view === view)?.target
+  const target = publicNavItems.find((item) => item.view === view)?.target
   window.setTimeout(() => {
     const section = target ? document.getElementById(target) : null
     if (section) {
@@ -129,19 +130,18 @@ function signOut() {
 
       <nav class="nav-links" aria-label="Primary navigation">
         <button
-          v-for="item in navItems"
+          v-for="item in publicNavItems"
           :key="item.view"
           type="button"
-          :class="{ active: activeView === item.view }"
+          :class="{ active: activeView === item.view, 'login-nav-item': item.view === 'login' }"
           @click="openView(item.view)"
         >
           {{ item.label }}
         </button>
       </nav>
 
-      <div class="header-actions">
+      <div v-if="isLoggedIn" class="header-actions">
         <button v-if="isLoggedIn" class="ghost-button" type="button" @click="signOut">Logout</button>
-        <button v-else class="primary-button" type="button" @click="openView('login')">Login</button>
       </div>
     </header>
 
@@ -159,6 +159,11 @@ function signOut() {
               <button class="primary-button" type="button" @click="openView('login')">Start Skin Scan</button>
               <button class="ghost-button" type="button" @click="openView('services')">Explore Services</button>
             </div>
+            <div class="hero-stat-strip" aria-label="Skino platform highlights">
+              <span>Guest scan</span>
+              <span>Routine guidance</span>
+              <span>Progress history</span>
+            </div>
           </div>
 
           <div class="hero-showcase" aria-label="Skino scan preview">
@@ -168,6 +173,10 @@ function signOut() {
                 <strong>82</strong>
               </div>
               <img class="hero-mascot" :src="heroMascot" alt="" />
+              <div class="quality-meter">
+                <span>Scan quality</span>
+                <strong>Clear light</strong>
+              </div>
               <div class="scan-summary">
                 <span>Normal to oily</span>
                 <span>Mild acne watch</span>
@@ -254,6 +263,11 @@ function signOut() {
           <p class="eyebrow">User access</p>
           <h1>Welcome back to Skino</h1>
           <p>Continue into your skin care workspace. This preview uses the final visual direction before API auth is connected.</p>
+          <div class="login-benefits">
+            <span>Private skin scan flow</span>
+            <span>Routine and appointment modules</span>
+            <span>Mobile-first Vue dashboard</span>
+          </div>
         </div>
 
         <form class="login-card" @submit.prevent="enterDashboard">
