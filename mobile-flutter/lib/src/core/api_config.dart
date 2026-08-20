@@ -51,5 +51,5 @@ class ApiConfig {
   }
 
   static const String connectionHelp =
-      'Android emulator: use http://10.0.2.2:8000/api. Real phone on the same Wi-Fi: run Laravel with --host=0.0.0.0 and use the laptop Wi-Fi IP, for example http://192.168.100.44:8000/api. Also start the Python AI service on port 5000 before analysis.';
+      'Android emulator: use http://10.0.2.2:8000/api. Real phone on the same Wi-Fi or phone hotspot: run Laravel with --host=0.0.0.0 and use the laptop IP from that network, for example http://192.168.100.44:8000/api. If Wi-Fi or power changes, recheck the laptop IP, save it in Settings, then tap Test. Also start the Python AI service on port 5000 before analysis.';
 }

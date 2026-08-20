@@ -4,6 +4,7 @@ import '../../../../core/skino_assets.dart';
 import '../../../../core/skino_image_icon.dart';
 import '../../../../core/skino_text.dart';
 import '../../models/skin_analysis_result.dart';
+import '../../models/skin_zone.dart';
 import '../../models/treatment_package.dart';
 
 class AnalysisResultPanel extends StatelessWidget {
@@ -53,6 +54,12 @@ class AnalysisResultPanel extends StatelessWidget {
             quality: quality,
             confidence: result.skinTypeConfidence,
           ),
+          const SizedBox(height: 14),
+          _ScanExplanationCard(result: result, text: text),
+          if (result.skinZones.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _SkinZoneDetailsCard(result: result, text: text),
+          ],
           const SizedBox(height: 16),
           Row(
             children: [
@@ -96,6 +103,333 @@ class AnalysisResultPanel extends StatelessWidget {
           else
             _BeautyRoutineCard(routine: routine, text: text),
         ],
+      ),
+    );
+  }
+}
+
+class _ScanExplanationCard extends StatelessWidget {
+  const _ScanExplanationCard({required this.result, required this.text});
+
+  final SkinAnalysisResult result;
+  final SkinoText text;
+
+  @override
+  Widget build(BuildContext context) {
+    final confidencePercent = (result.skinTypeConfidence * 100).round();
+    final quality = result.scanQuality;
+    final scoreMeaning = _scoreMeaning(result.skinHealthScore, text);
+    final concernSummary = result.concerns.isEmpty
+        ? (text.isMyanmar
+              ? 'အရေးကြီး concern မတွေ့ပါ။'
+              : 'No strong concern was detected.')
+        : result.concerns
+              .take(4)
+              .map(
+                (concern) =>
+                    '${text.concernLabel(concern.name)} ${(concern.confidence * 100).round()}% ${text.severityLabel(concern.severity)}',
+              )
+              .join(', ');
+    final routine = result.treatmentPackage;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF7F4EF),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFE8DED1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.fact_check_outlined, color: Color(0xFF0E5C56)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  text.scanExplanation,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF282420),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _ExplanationRow(
+            label: text.skinType,
+            value:
+                '${text.concernLabel(result.skinType)} ($confidencePercent% ${text.isMyanmar ? 'ယုံကြည်မှု' : 'confidence'})',
+          ),
+          _ExplanationRow(
+            label: text.acneSeverity,
+            value: text.severityLabel(result.acneSeverity),
+          ),
+          _ExplanationRow(label: text.concerns, value: concernSummary),
+          _ExplanationRow(
+            label: text.scoreMeaning,
+            value: '${result.skinHealthScore}/100 - $scoreMeaning',
+          ),
+          if (quality != null)
+            _ExplanationRow(
+              label: text.scanQuality,
+              value:
+                  '${quality.level} - ${quality.message} (${(quality.brightness * 100).round()}% light, ${(quality.skinCoverage * 100).round()}% face)',
+            ),
+          if (routine != null)
+            _ExplanationRow(label: text.routineReason, value: routine.reason),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExplanationRow extends StatelessWidget {
+  const _ExplanationRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF7A7169),
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Color(0xFF282420),
+              fontWeight: FontWeight.w500,
+              height: 1.35,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SkinZoneDetailsCard extends StatelessWidget {
+  const _SkinZoneDetailsCard({required this.result, required this.text});
+
+  final SkinAnalysisResult result;
+  final SkinoText text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFFE3D1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.face_retouching_natural,
+                color: Color(0xFFF98128),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  text.skinZoneDetails,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF282420),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          for (final zone in result.skinZones)
+            _ZoneTile(zone: zone, text: text),
+        ],
+      ),
+    );
+  }
+}
+
+class _ZoneTile extends StatelessWidget {
+  const _ZoneTile({required this.zone, required this.text});
+
+  final SkinZone zone;
+  final SkinoText text;
+
+  @override
+  Widget build(BuildContext context) {
+    final topConcern = zone.concerns.isEmpty
+        ? (text.isMyanmar ? 'Concern မတွေ့ပါ' : 'No strong concern')
+        : zone.concerns
+              .take(2)
+              .map((concern) => text.concernLabel(concern.name))
+              .join(', ');
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _zoneLabel(zone.label, text),
+                  style: const TextStyle(
+                    color: Color(0xFF282420),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              _StatusPillSmall(
+                label: '${zone.score}/100',
+                color: zone.score >= 70
+                    ? const Color(0xFF0E5C56)
+                    : const Color(0xFFF98128),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            topConcern,
+            style: const TextStyle(
+              color: Color(0xFF68625B),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _MetricBar(
+            label: text.concernLabel('oiliness'),
+            value: zone.oiliness,
+            color: const Color(0xFFF98128),
+          ),
+          _MetricBar(
+            label: text.concernLabel('dark_spots'),
+            value: zone.darkSpots,
+            color: const Color(0xFF7A5C4B),
+          ),
+          _MetricBar(
+            label: text.concernLabel('redness'),
+            value: zone.redness,
+            color: const Color(0xFFE5533C),
+          ),
+          _MetricBar(
+            label: text.concernLabel('texture'),
+            value: zone.texture,
+            color: const Color(0xFF7A8F72),
+          ),
+          _MetricBar(
+            label: text.concernLabel('dryness'),
+            value: zone.dryness,
+            color: const Color(0xFF4B86A6),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetricBar extends StatelessWidget {
+  const _MetricBar({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final double value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final safeValue = value.clamp(0.0, 1.0);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 86,
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Color(0xFF625B53),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                value: safeValue,
+                minHeight: 7,
+                backgroundColor: const Color(0xFFEDE6DD),
+                color: color,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 34,
+            child: Text(
+              '${(safeValue * 100).round()}%',
+              textAlign: TextAlign.end,
+              style: const TextStyle(
+                color: Color(0xFF625B53),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusPillSmall extends StatelessWidget {
+  const _StatusPillSmall({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -625,6 +959,43 @@ class _SectionKicker extends StatelessWidget {
       ),
     );
   }
+}
+
+String _scoreMeaning(int score, SkinoText text) {
+  if (score >= 82) {
+    return text.isMyanmar
+        ? 'အခြေအနေကောင်းပြီး maintenance routine ကို ဆက်ထိန်းပါ။'
+        : 'Looks strong; keep a maintenance routine.';
+  }
+  if (score >= 68) {
+    return text.isMyanmar
+        ? 'အလယ်အလတ်ကောင်းပြီး routine ပုံမှန်လုပ်ရင် track ကြည့်နိုင်ပါတယ်။'
+        : 'Moderate-good; follow the routine and track changes.';
+  }
+  if (score >= 50) {
+    return text.isMyanmar
+        ? 'Care ပိုလိုနိုင်ပြီး scan quality နှင့် concern များကိုစစ်ပါ။'
+        : 'Needs more care; check scan quality and visible concerns.';
+  }
+
+  return text.isMyanmar
+      ? 'မသေချာမှု သို့မဟုတ် concern များနိုင်ပါတယ်။ Specialist review စဉ်းစားပါ။'
+      : 'May be uncertain or concern-heavy; consider specialist review.';
+}
+
+String _zoneLabel(String label, SkinoText text) {
+  if (!text.isMyanmar) {
+    return label;
+  }
+
+  return switch (label.toLowerCase()) {
+    'forehead' => 'နဖူး',
+    'left cheek' => 'ဘယ်ပါး',
+    'right cheek' => 'ညာပါး',
+    'nose' => 'နှာခေါင်း',
+    'chin' => 'မေးစေ့',
+    _ => label,
+  };
 }
 
 String _titleCase(String value) {

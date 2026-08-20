@@ -63,6 +63,26 @@ npm install
 npm run dev
 ```
 
+## Vue User Web App
+
+```powershell
+cd web-app
+npm install
+npm run dev -- --host 0.0.0.0 --port 5174
+```
+
+Open locally:
+
+```text
+http://localhost:5174
+```
+
+For a friend on the same hotspot/Wi-Fi network, use the laptop IPv4 address:
+
+```text
+http://YOUR_LAPTOP_IP:5174
+```
+
 Run Laravel and Vue together in two terminals:
 
 ```powershell
@@ -73,6 +93,10 @@ php artisan serve --host=127.0.0.1 --port=8000
 # Terminal 2
 cd D:\Skin_care_AI_platform\admin-vue
 npm run dev -- --host 127.0.0.1 --port 5173
+
+# Terminal 3
+cd D:\Skin_care_AI_platform\web-app
+npm run dev -- --host 0.0.0.0 --port 5174
 ```
 
 ## Flutter Mobile App

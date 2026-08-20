@@ -58,6 +58,7 @@ class RoutineAssistantApiTest extends TestCase
 
         Http::assertSent(fn ($request) => $request->hasHeader('x-goog-api-key', 'test-gemini-key')
             && str_contains($request->url(), '/models/gemini-2.5-flash:generateContent')
+            && str_contains($request['systemInstruction']['parts'][0]['text'], 'Myanmar + English subtitle style')
             && str_contains($request['contents'][0]['parts'][0]['text'], 'What should I do tonight?'));
     }
 
@@ -92,10 +93,7 @@ class RoutineAssistantApiTest extends TestCase
             ],
         ])
             ->assertOk()
-            ->assertJsonPath(
-                'data.reply',
-                'Your scan suggests sensitive needs gentle, consistent care. Your latest score is 57/100. Treat this as guidance only, not a medical diagnosis.',
-            );
+            ->assertJsonPath('data.reply', "နောက်ဆုံးစကင်အရ sensitive skin အတွက် နူးညံ့ပြီး ပုံမှန်လုပ်နိုင်တဲ့ care ကို အကြံပြုထားပါတယ်။ Your latest score is 57/100. ဒီရလဒ်က skincare guidance ဖြစ်ပြီး medical diagnosis မဟုတ်ပါ။\n\nEN: Your latest scan suggests sensitive skin needs gentle, consistent care. Your latest score is 57/100. This is skincare guidance, not a medical diagnosis.");
 
         Http::assertNothingSent();
     }

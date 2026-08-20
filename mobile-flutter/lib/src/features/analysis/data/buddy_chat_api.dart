@@ -83,7 +83,34 @@ class BuddyChatApi {
           : {
               'level': result.scanQuality!.level,
               'message': result.scanQuality!.message,
+              'brightness': result.scanQuality!.brightness,
+              'skin_coverage': result.scanQuality!.skinCoverage,
+              'face_centering': result.scanQuality!.faceCentering,
             },
+      'skin_zones': result.skinZones
+          .take(5)
+          .map(
+            (zone) => {
+              'label': zone.label,
+              'score': zone.score,
+              'top_concerns': zone.concerns
+                  .take(3)
+                  .map(
+                    (concern) => {
+                      'name': concern.name,
+                      'severity': concern.severity,
+                      'confidence': concern.confidence,
+                    },
+                  )
+                  .toList(),
+              'oiliness': zone.oiliness,
+              'dark_spots': zone.darkSpots,
+              'redness': zone.redness,
+              'texture': zone.texture,
+              'dryness': zone.dryness,
+            },
+          )
+          .toList(),
       'treatment_package': package == null
           ? null
           : {
