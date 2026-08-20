@@ -1,20 +1,31 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Manrope:wght@700;800&family=Poppins:wght@400;500;600;700;800&display=swap");
+
 :root {
-  --bg: #fbf9f4;
-  --surface: #ffffff;
-  --surface-soft: #fff8f2;
-  --text: #282420;
-  --muted: #68625b;
-  --border: #ffe3d1;
-  --primary: #0e5c56;
-  --primary-dark: #123c36;
-  --accent: #f98128;
+  --bg: #fff9f2;
+  --secondary-bg: #fffcf8;
+  --surface: #fffdf9;
+  --surface-soft: #fff4e9;
+  --text: #32190f;
+  --muted: #6f6059;
+  --subtle: #9d8d84;
+  --border: rgba(50, 25, 15, 0.1);
+  --border-strong: rgba(50, 25, 15, 0.22);
+  --primary: #ff6a00;
+  --primary-dark: #32190f;
+  --accent: #ff6a00;
+  --accent-2: #ff9a3d;
+  --accent-light: #ffd8b5;
+  --green: #22b573;
+  --green-light: #eaf7de;
+  --purple: #7d5cff;
+  --purple-light: #f1ebff;
   --danger: #9e2732;
-  --shadow: 0 20px 46px rgba(40, 36, 32, 0.1);
-  --small-shadow: 0 10px 24px rgba(40, 36, 32, 0.08);
+  --shadow: 0 26px 70px rgba(50, 25, 15, 0.12);
+  --small-shadow: 0 14px 34px rgba(50, 25, 15, 0.08);
   color: var(--text);
   background: var(--bg);
   font-family:
-    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    Poppins, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -53,8 +64,11 @@ img {
 
 .app-shell {
   background:
-    radial-gradient(circle at top right, rgba(255, 227, 209, 0.52), transparent 32%),
-    linear-gradient(135deg, #fcfaf7, #fbf8f4 52%, #f7f5ef);
+    linear-gradient(90deg, rgba(50, 25, 15, 0.035) 1px, transparent 1px),
+    linear-gradient(rgba(50, 25, 15, 0.035) 1px, transparent 1px),
+    radial-gradient(circle at 76% 10%, rgba(255, 106, 0, 0.16), transparent 30%),
+    linear-gradient(135deg, var(--bg), var(--secondary-bg) 52%, var(--surface-soft));
+  background-size: 56px 56px, 56px 56px, auto, auto;
 }
 
 .site-header {
@@ -68,7 +82,7 @@ img {
   min-height: 86px;
   padding: 16px clamp(18px, 4vw, 64px);
   border-bottom: 1px solid rgba(255, 227, 209, 0.72);
-  background: rgba(251, 249, 244, 0.88);
+  background: rgba(255, 249, 242, 0.88);
   backdrop-filter: blur(18px);
 }
 
@@ -91,16 +105,20 @@ img {
 
 .brand-button strong {
   display: block;
+  font-family: Manrope, sans-serif;
   font-size: 1.08rem;
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .brand-button small {
   display: block;
   margin-top: 2px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 600;
+  color: var(--subtle);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 .brand-mark {
@@ -112,7 +130,7 @@ img {
   place-items: center;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: #ffffff;
+  background: var(--surface);
   box-shadow: var(--small-shadow);
 }
 
@@ -134,14 +152,18 @@ img {
   padding: 0 15px;
   color: var(--muted);
   background: transparent;
-  font-weight: 600;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
 
 .nav-links button:hover,
 .nav-links button.active {
-  color: var(--primary-dark);
-  background: #eaf6f1;
+  color: var(--text);
+  background: var(--surface-soft);
 }
 
 .nav-links .login-nav-item {
@@ -173,7 +195,7 @@ img {
   border: 0;
   color: #ffffff;
   background: var(--primary);
-  box-shadow: 0 12px 24px rgba(14, 92, 86, 0.24);
+  box-shadow: 0 16px 28px rgba(255, 106, 0, 0.24);
 }
 
 .primary-button:hover {
@@ -182,7 +204,7 @@ img {
 
 .ghost-button {
   border: 1px solid var(--border);
-  color: var(--primary-dark);
+  color: var(--text);
   background: rgba(255, 255, 255, 0.74);
 }
 
@@ -216,9 +238,11 @@ main {
 
 .eyebrow {
   margin: 0 0 14px;
-  color: var(--primary-dark);
+  color: var(--subtle);
+  font-family: "IBM Plex Mono", monospace;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
@@ -230,10 +254,12 @@ p {
 
 h1 {
   margin-bottom: 18px;
-  font-size: clamp(2.6rem, 8vw, 5.8rem);
-  font-weight: 600;
-  line-height: 0.98;
-  letter-spacing: 0;
+  font-family: Manrope, sans-serif;
+  font-size: clamp(3.2rem, 9vw, 7rem);
+  font-weight: 800;
+  line-height: 0.88;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
 }
 
 .login-copy h1,
@@ -271,14 +297,17 @@ h1 {
 
 .hero-stat-strip span,
 .login-benefits span {
-  border: 1px solid rgba(255, 227, 209, 0.94);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 12px;
-  color: var(--primary-dark);
+  color: var(--text);
   background: rgba(255, 255, 255, 0.78);
-  font-size: 0.9rem;
-  font-weight: 800;
-  box-shadow: 0 8px 18px rgba(40, 36, 32, 0.05);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 18px rgba(50, 25, 15, 0.05);
 }
 
 .hero-showcase,
@@ -295,7 +324,7 @@ h1 {
 .module-card {
   border: 1px solid rgba(255, 227, 209, 0.94);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 253, 249, 0.94);
   box-shadow: var(--small-shadow);
 }
 
@@ -308,8 +337,8 @@ h1 {
   padding: clamp(22px, 4vw, 34px);
   overflow: hidden;
   background:
-    linear-gradient(155deg, rgba(234, 246, 241, 0.92), rgba(255, 248, 242, 0.96) 58%, rgba(255, 227, 209, 0.44)),
-    #ffffff;
+    linear-gradient(155deg, rgba(255, 244, 233, 0.96), rgba(255, 253, 249, 0.96) 58%, rgba(255, 216, 181, 0.58)),
+    var(--surface);
 }
 
 .hero-showcase::before {
@@ -318,11 +347,11 @@ h1 {
   left: 34px;
   width: 126px;
   height: 126px;
-  border: 1px solid rgba(14, 92, 86, 0.12);
+  border: 1px solid rgba(50, 25, 15, 0.12);
   border-radius: 8px;
   background:
-    linear-gradient(90deg, rgba(14, 92, 86, 0.08) 1px, transparent 1px),
-    linear-gradient(rgba(14, 92, 86, 0.08) 1px, transparent 1px);
+    linear-gradient(90deg, rgba(255, 106, 0, 0.12) 1px, transparent 1px),
+    linear-gradient(rgba(255, 106, 0, 0.12) 1px, transparent 1px);
   background-size: 18px 18px;
   content: "";
 }
@@ -334,7 +363,7 @@ h1 {
   width: min(100%, 360px);
   gap: 18px;
   padding: 22px;
-  background: #fffdf9;
+  background: var(--panel, #fffdf9);
   box-shadow: var(--shadow);
 }
 
@@ -349,8 +378,10 @@ h1 {
 .floating-note span,
 .service-card span {
   color: var(--accent);
+  font-family: "IBM Plex Mono", monospace;
   font-size: 0.78rem;
   font-weight: 800;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
@@ -365,6 +396,20 @@ h1 {
   font-size: 1.46rem;
 }
 
+.slide-code {
+  width: fit-content;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .hero-mascot {
   width: min(100%, 280px);
   aspect-ratio: 1 / 1;
@@ -377,20 +422,21 @@ h1 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border: 1px solid rgba(249, 129, 40, 0.18);
+  border: 1px solid rgba(255, 106, 0, 0.18);
   border-radius: 8px;
   padding: 12px;
-  background: #fff3ec;
+  background: var(--surface-soft);
 }
 
 .quality-meter span {
   color: #7a4a22;
+  font-family: "IBM Plex Mono", monospace;
   font-size: 0.82rem;
   font-weight: 800;
 }
 
 .quality-meter strong {
-  color: var(--primary-dark);
+  color: var(--text);
   font-size: 0.95rem;
 }
 
@@ -404,11 +450,11 @@ h1 {
   display: grid;
   min-height: 48px;
   align-items: center;
-  border: 1px solid rgba(14, 92, 86, 0.14);
+  border: 1px solid rgba(255, 106, 0, 0.16);
   border-radius: 8px;
   padding: 8px;
-  color: var(--primary-dark);
-  background: #eaf6f1;
+  color: var(--text);
+  background: rgba(255, 216, 181, 0.4);
   font-size: 0.78rem;
   font-weight: 800;
   line-height: 1.25;
@@ -437,7 +483,39 @@ h1 {
   display: block;
   margin-top: 4px;
   font-size: 1rem;
+  font-weight: 700;
   line-height: 1.35;
+}
+
+.hero-pager {
+  position: absolute;
+  left: 24px;
+  bottom: 24px;
+  display: flex;
+  gap: 8px;
+}
+
+.hero-pager button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(255, 253, 249, 0.9);
+}
+
+.hero-pager button.active {
+  border-color: var(--primary);
+  color: #ffffff;
+  background: var(--primary);
+}
+
+.hero-pager span {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .landing-section {
@@ -462,10 +540,12 @@ h1 {
 .about-band h2,
 .contact-panel h2 {
   margin: 0;
+  font-family: Manrope, sans-serif;
   font-size: clamp(1.9rem, 4vw, 3.05rem);
-  font-weight: 600;
-  line-height: 1.08;
-  letter-spacing: 0;
+  font-weight: 800;
+  line-height: 0.94;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
 }
 
 .step-grid,
@@ -485,7 +565,7 @@ h1 {
   align-content: start;
   gap: 14px;
   padding: 24px;
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .step-number {
@@ -509,8 +589,9 @@ h1 {
 .step-card h3,
 .service-card h3 {
   margin: 0;
+  font-family: Manrope, sans-serif;
   font-size: 1.32rem;
-  font-weight: 600;
+  font-weight: 800;
 }
 
 .step-card p,
@@ -534,7 +615,7 @@ h1 {
   align-content: start;
   gap: 12px;
   padding: 22px;
-  background: #ffffff;
+  background: var(--surface);
   border-color: color-mix(in srgb, var(--module-tone), #ffffff 74%);
 }
 
@@ -553,8 +634,8 @@ h1 {
   align-items: center;
   padding: clamp(22px, 4vw, 34px);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 248, 242, 0.94)),
-    #ffffff;
+    linear-gradient(135deg, rgba(255, 253, 249, 0.96), rgba(255, 244, 233, 0.94)),
+    var(--surface);
 }
 
 .about-band > div:first-child p:not(.eyebrow) {
@@ -566,12 +647,12 @@ h1 {
   display: grid;
   gap: 8px;
   padding: 20px;
-  background: #eaf6f1;
-  border-color: rgba(14, 92, 86, 0.14);
+  background: var(--green-light);
+  border-color: rgba(34, 181, 115, 0.18);
 }
 
 .privacy-card strong {
-  color: var(--primary-dark);
+  color: var(--text);
   font-size: 1.24rem;
 }
 
@@ -581,7 +662,7 @@ h1 {
   justify-content: space-between;
   gap: 22px;
   padding: clamp(22px, 4vw, 34px);
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .contact-panel p {

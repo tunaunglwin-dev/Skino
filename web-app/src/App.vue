@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import logo from './assets/branding/skino_logo.png'
 import heroMascot from './assets/branding/skino_little_guy_wave.png'
 import scanIcon from './assets/branding/skino_icon_scan.png'
@@ -12,6 +12,8 @@ import careMascot from './assets/branding/skino_little_guy_care.png'
 
 const activeView = ref('home')
 const isLoggedIn = ref(false)
+const currentHeroSlide = ref(0)
+let heroTimer
 
 const publicNavItems = [
   { label: 'Home', view: 'home', target: 'home' },
@@ -36,6 +38,36 @@ const howSteps = [
     title: 'Improve',
     text: 'Follow daily care, track progress, and request specialist help.',
     icon: routineIcon,
+  },
+]
+
+const heroSlides = [
+  {
+    label: 'Live Face Scan',
+    code: 'Scan / #0042',
+    title: 'Skin story detected',
+    score: '82',
+    mascot: heroMascot,
+    tags: ['Clear light', 'Face ready', 'Routine match'],
+    note: 'Hold still. Skino is reading visible skin patterns.',
+  },
+  {
+    label: 'Routine Engine',
+    code: 'Care / AM',
+    title: 'Daily care built',
+    score: '04',
+    mascot: careMascot,
+    tags: ['Cleanser', 'Moisturizer', 'SPF'],
+    note: 'A simple routine is prepared from the latest scan.',
+  },
+  {
+    label: 'Progress Memory',
+    code: 'Week / 06',
+    title: 'Progress tracked',
+    score: '+18',
+    mascot: progressIcon,
+    tags: ['History', 'Check-ins', 'Consistency'],
+    note: 'Skino keeps the journey clear without making medical claims.',
   },
 ]
 
@@ -85,6 +117,7 @@ const modules = [
 ]
 
 const currentTitle = computed(() => (isLoggedIn.value ? 'User Dashboard' : 'Skino'))
+const heroSlide = computed(() => heroSlides[currentHeroSlide.value])
 
 function openView(view) {
   activeView.value = view
@@ -113,6 +146,20 @@ function signOut() {
   isLoggedIn.value = false
   activeView.value = 'home'
 }
+
+function chooseHeroSlide(index) {
+  currentHeroSlide.value = index
+}
+
+onMounted(() => {
+  heroTimer = window.setInterval(() => {
+    currentHeroSlide.value = (currentHeroSlide.value + 1) % heroSlides.length
+  }, 3600)
+})
+
+onBeforeUnmount(() => {
+  window.clearInterval(heroTimer)
+})
 </script>
 
 <template>
@@ -166,21 +213,20 @@ function signOut() {
             </div>
           </div>
 
-          <div class="hero-showcase" aria-label="Skino scan preview">
-            <div class="phone-preview">
+          <div class="hero-showcase" aria-label="Skino product preview">
+            <div class="phone-preview" :key="heroSlide.title">
               <div class="phone-topline">
-                <span>Today scan</span>
-                <strong>82</strong>
+                <span>{{ heroSlide.label }}</span>
+                <strong>{{ heroSlide.score }}</strong>
               </div>
-              <img class="hero-mascot" :src="heroMascot" alt="" />
+              <div class="slide-code">{{ heroSlide.code }}</div>
+              <img class="hero-mascot" :src="heroSlide.mascot" alt="" />
               <div class="quality-meter">
-                <span>Scan quality</span>
-                <strong>Clear light</strong>
+                <span>{{ heroSlide.title }}</span>
+                <strong>Active</strong>
               </div>
               <div class="scan-summary">
-                <span>Normal to oily</span>
-                <span>Mild acne watch</span>
-                <span>Routine ready</span>
+                <span v-for="tag in heroSlide.tags" :key="tag">{{ tag }}</span>
               </div>
             </div>
 
@@ -188,8 +234,20 @@ function signOut() {
               <img :src="careMascot" alt="" />
               <div>
                 <span>Skino Buddy</span>
-                <strong>Gentle care, clear next steps</strong>
+                <strong>{{ heroSlide.note }}</strong>
               </div>
+            </div>
+
+            <div class="hero-pager" aria-label="Hero preview slides">
+              <button
+                v-for="(slide, index) in heroSlides"
+                :key="slide.title"
+                type="button"
+                :class="{ active: currentHeroSlide === index }"
+                @click="chooseHeroSlide(index)"
+              >
+                <span>{{ index + 1 }}</span>
+              </button>
             </div>
           </div>
         </section>
