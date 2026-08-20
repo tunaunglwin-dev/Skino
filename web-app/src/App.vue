@@ -76,44 +76,88 @@ const modules = [
     title: 'AI Skin Scan',
     subtitle: 'Upload or capture a face image and review visible skin guidance.',
     icon: scanIcon,
-    tone: '#f98128',
+    tone: '#ff6a00',
     status: 'Ready',
   },
   {
     title: 'Routine',
     subtitle: 'Morning and night beauty steps based on the latest scan.',
     icon: routineIcon,
-    tone: '#0e5c56',
+    tone: '#22b573',
     status: 'Daily',
   },
   {
     title: 'Specialist',
     subtitle: 'Find specialist support when a case needs closer review.',
     icon: specialistIcon,
-    tone: '#9e6a36',
+    tone: '#7d5cff',
     status: 'Care',
   },
   {
     title: 'Appointment',
     subtitle: 'Request a consultation and track the current status.',
     icon: reportIcon,
-    tone: '#805d93',
+    tone: '#ff9a3d',
     status: 'Request',
   },
   {
     title: 'History',
     subtitle: 'Review previous scans, scores, and concern changes.',
     icon: historyIcon,
-    tone: '#376c8f',
+    tone: '#7d5cff',
     status: 'Timeline',
   },
   {
     title: 'Progress',
     subtitle: 'See how your skin journey changes across check-ins.',
     icon: progressIcon,
-    tone: '#c35d4f',
+    tone: '#22b573',
     status: 'Track',
   },
+]
+
+const safetyCards = [
+  {
+    number: '01',
+    title: 'Guidance, not diagnosis',
+    text: 'Skino explains visible patterns for beauty care and never replaces medical advice.',
+  },
+  {
+    number: '02',
+    title: 'Consent first',
+    text: 'Face scans are sensitive, so the user must understand what is being processed.',
+  },
+  {
+    number: '03',
+    title: 'Specialist handoff',
+    text: 'When a concern looks uncertain or serious, the product path moves toward care support.',
+  },
+  {
+    number: '04',
+    title: 'History with control',
+    text: 'Progress tracking should help users compare changes without hiding privacy choices.',
+  },
+]
+
+const analysisBars = [
+  { label: 'Skin balance', value: 82, tone: '#ff6a00' },
+  { label: 'Routine match', value: 76, tone: '#22b573' },
+  { label: 'Scan clarity', value: 92, tone: '#7d5cff' },
+  { label: 'Progress signal', value: 68, tone: '#ff9a3d' },
+]
+
+const routineSteps = [
+  'Gentle cleanser',
+  'Hydrating care',
+  'Light moisturizer',
+  'Daily sunscreen',
+]
+
+const memoryStats = [
+  { value: '+18%', label: 'Routine consistency' },
+  { value: '12', label: 'Day streak' },
+  { value: '06', label: 'Weekly check-ins' },
+  { value: '82', label: 'Latest score' },
 ]
 
 const currentTitle = computed(() => (isLoggedIn.value ? 'User Dashboard' : 'Skino'))
@@ -278,7 +322,7 @@ onBeforeUnmount(() => {
           <div class="section-heading section-heading-row">
             <div>
               <p class="eyebrow">Services</p>
-              <h2 id="services-title">Everything the user dashboard will grow into</h2>
+              <h2 id="services-title">Face scan, routine, care, and progress in one path</h2>
             </div>
             <button class="ghost-button" type="button" @click="openView('login')">Preview Dashboard</button>
           </div>
@@ -293,6 +337,91 @@ onBeforeUnmount(() => {
               <span>{{ module.status }}</span>
               <h3>{{ module.title }}</h3>
               <p>{{ module.subtitle }}</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="landing-section product-story" aria-labelledby="story-title">
+          <div class="section-heading">
+            <p class="eyebrow">Skin AI / 004</p>
+            <h2 id="story-title">Understand what you see, then know what to do next</h2>
+          </div>
+
+          <div class="story-grid">
+            <article class="score-panel">
+              <p class="eyebrow">Analysis preview</p>
+              <strong>82</strong>
+              <span>Skin score</span>
+              <small>Demo result from the customer dashboard flow</small>
+            </article>
+
+            <article class="bars-panel">
+              <div v-for="bar in analysisBars" :key="bar.label" class="bar-row" :style="{ '--bar-tone': bar.tone }">
+                <div>
+                  <span>{{ bar.label }}</span>
+                  <strong>{{ bar.value }}%</strong>
+                </div>
+                <i><b :style="{ width: `${bar.value}%` }"></b></i>
+              </div>
+            </article>
+
+            <article class="noticed-panel">
+              <img :src="reportIcon" alt="" />
+              <h3>What Skino noticed</h3>
+              <p>
+                The product should translate scan results into simple care language:
+                visible skin type, concern level, routine reason, and when to ask a specialist.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="landing-section routine-band" aria-labelledby="routine-title">
+          <div>
+            <p class="eyebrow">Routine / Daily care</p>
+            <h2 id="routine-title">Your skin. Your products. Your routine.</h2>
+            <p>
+              This is the direction for the logged-in dashboard: clear steps, friendly reminders,
+              and progress tracking instead of random product guessing.
+            </p>
+          </div>
+
+          <div class="routine-timeline">
+            <span v-for="(step, index) in routineSteps" :key="step">
+              <i>{{ String(index + 1).padStart(2, '0') }}</i>
+              <strong>{{ step }}</strong>
+            </span>
+          </div>
+        </section>
+
+        <section class="landing-section memory-section" aria-labelledby="memory-title">
+          <div class="section-heading section-heading-row">
+            <div>
+              <p class="eyebrow">Progress / Skin memory</p>
+              <h2 id="memory-title">See how far your care journey has moved</h2>
+            </div>
+            <img class="section-mascot" :src="progressIcon" alt="" />
+          </div>
+
+          <div class="memory-grid">
+            <article v-for="stat in memoryStats" :key="stat.label" class="memory-card">
+              <strong>{{ stat.value }}</strong>
+              <span>{{ stat.label }}</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="landing-section safety-section" aria-labelledby="safety-title">
+          <div class="section-heading">
+            <p class="eyebrow">Safety / Responsible AI</p>
+            <h2 id="safety-title">Smart AI with clear limits</h2>
+          </div>
+
+          <div class="safety-grid">
+            <article v-for="card in safetyCards" :key="card.title" class="safety-card">
+              <span>{{ card.number }}</span>
+              <h3>{{ card.title }}</h3>
+              <p>{{ card.text }}</p>
             </article>
           </div>
         </section>
