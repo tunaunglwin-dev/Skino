@@ -196,8 +196,12 @@ onBeforeUnmount(() => {
       <template v-if="!isLoggedIn && activeView !== 'login'">
         <section id="home" class="landing-hero">
           <div class="home-copy">
-            <p class="eyebrow">AI beauty care platform</p>
-            <h1>Skino</h1>
+            <p class="eyebrow">Skino / Personal Skin Intelligence</p>
+            <h1>
+              <span>Your skin</span>
+              <span>has a story.</span>
+              <span class="orange-line">Skino listens.</span>
+            </h1>
             <p>
               Scan your skin, understand visible concerns, follow a simple beauty routine,
               and request specialist support when your care journey needs a closer look.
@@ -220,7 +224,10 @@ onBeforeUnmount(() => {
                 <strong>{{ heroSlide.score }}</strong>
               </div>
               <div class="slide-code">{{ heroSlide.code }}</div>
-              <img class="hero-mascot" :src="heroSlide.mascot" alt="" />
+              <div class="hero-image-stage">
+                <img class="hero-mascot" :src="heroSlide.mascot" alt="" />
+                <span class="scan-sweep"></span>
+              </div>
               <div class="quality-meter">
                 <span>{{ heroSlide.title }}</span>
                 <strong>Active</strong>
