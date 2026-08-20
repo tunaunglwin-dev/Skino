@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import logo from './assets/branding/skino_logo.png'
 import heroMascot from './assets/branding/skino_little_guy_wave.png'
 import scanIcon from './assets/branding/skino_icon_scan.png'
@@ -12,8 +12,6 @@ import careMascot from './assets/branding/skino_little_guy_care.png'
 
 const activeView = ref('home')
 const isLoggedIn = ref(false)
-const currentHeroSlide = ref(0)
-let heroTimer
 
 const publicNavItems = [
   { label: 'Home', view: 'home', target: 'home' },
@@ -41,35 +39,14 @@ const howSteps = [
   },
 ]
 
-const heroSlides = [
-  {
-    label: 'Live Face Scan',
-    code: 'Scan / #0042',
-    title: 'Skin story detected',
-    score: '82',
-    mascot: heroMascot,
-    tags: ['Clear light', 'Face ready', 'Routine match'],
-    note: 'Hold still. Skino is reading visible skin patterns.',
-  },
-  {
-    label: 'Routine Engine',
-    code: 'Care / AM',
-    title: 'Daily care built',
-    score: '04',
-    mascot: careMascot,
-    tags: ['Cleanser', 'Moisturizer', 'SPF'],
-    note: 'A simple routine is prepared from the latest scan.',
-  },
-  {
-    label: 'Progress Memory',
-    code: 'Week / 06',
-    title: 'Progress tracked',
-    score: '+18',
-    mascot: progressIcon,
-    tags: ['History', 'Check-ins', 'Consistency'],
-    note: 'Skino keeps the journey clear without making medical claims.',
-  },
-]
+const heroFeature = {
+  label: 'Live Face Scan',
+  code: 'Scan / #0042',
+  title: 'Skin story detected',
+  score: '82',
+  tags: ['Clear light', 'Face ready', 'Routine match'],
+  note: 'Hold still. Skino is reading visible skin patterns.',
+}
 
 const modules = [
   {
@@ -160,8 +137,14 @@ const memoryStats = [
   { value: '82', label: 'Latest score' },
 ]
 
+const teamMembers = [
+  { name: 'Tun Aung Lwin', role: 'Project lead' },
+  { name: 'Sai Bhone Myat', role: 'Frontend and product UI' },
+  { name: 'Mn', role: 'Backend and data flow' },
+  { name: 'Lei War Khaing', role: 'AI and product research' },
+]
+
 const currentTitle = computed(() => (isLoggedIn.value ? 'User Dashboard' : 'Skino'))
-const heroSlide = computed(() => heroSlides[currentHeroSlide.value])
 
 function openView(view) {
   activeView.value = view
@@ -191,19 +174,6 @@ function signOut() {
   activeView.value = 'home'
 }
 
-function chooseHeroSlide(index) {
-  currentHeroSlide.value = index
-}
-
-onMounted(() => {
-  heroTimer = window.setInterval(() => {
-    currentHeroSlide.value = (currentHeroSlide.value + 1) % heroSlides.length
-  }, 3600)
-})
-
-onBeforeUnmount(() => {
-  window.clearInterval(heroTimer)
-})
 </script>
 
 <template>
@@ -262,22 +232,22 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="hero-showcase" aria-label="Skino product preview">
-            <div class="phone-preview" :key="heroSlide.title">
+            <div class="phone-preview">
               <div class="phone-topline">
-                <span>{{ heroSlide.label }}</span>
-                <strong>{{ heroSlide.score }}</strong>
+                <span>{{ heroFeature.label }}</span>
+                <strong>{{ heroFeature.score }}</strong>
               </div>
-              <div class="slide-code">{{ heroSlide.code }}</div>
+              <div class="slide-code">{{ heroFeature.code }}</div>
               <div class="hero-image-stage">
-                <img class="hero-mascot" :src="heroSlide.mascot" alt="" />
+                <img class="hero-mascot" :src="heroMascot" alt="" />
                 <span class="scan-sweep"></span>
               </div>
               <div class="quality-meter">
-                <span>{{ heroSlide.title }}</span>
+                <span>{{ heroFeature.title }}</span>
                 <strong>Active</strong>
               </div>
               <div class="scan-summary">
-                <span v-for="tag in heroSlide.tags" :key="tag">{{ tag }}</span>
+                <span v-for="tag in heroFeature.tags" :key="tag">{{ tag }}</span>
               </div>
             </div>
 
@@ -285,20 +255,8 @@ onBeforeUnmount(() => {
               <img :src="careMascot" alt="" />
               <div>
                 <span>Skino Buddy</span>
-                <strong>{{ heroSlide.note }}</strong>
+                <strong>{{ heroFeature.note }}</strong>
               </div>
-            </div>
-
-            <div class="hero-pager" aria-label="Hero preview slides">
-              <button
-                v-for="(slide, index) in heroSlides"
-                :key="slide.title"
-                type="button"
-                :class="{ active: currentHeroSlide === index }"
-                @click="chooseHeroSlide(index)"
-              >
-                <span>{{ index + 1 }}</span>
-              </button>
             </div>
           </div>
         </section>
@@ -429,26 +387,20 @@ onBeforeUnmount(() => {
         <section id="about" class="landing-section about-band" aria-labelledby="about-title">
           <div>
             <p class="eyebrow">About us</p>
-            <h2 id="about-title">Built for beauty guidance, privacy, and steady progress</h2>
+            <h2 id="about-title">Team Kairo builds Skino for clear skin-care guidance</h2>
             <p>
               Skino is a wellness and skincare assistant, not a medical diagnosis system.
               The web app path keeps Laravel as the business API, Python as the AI service,
               and Vue.js as the customer experience.
             </p>
           </div>
-          <div class="privacy-card">
-            <strong>Your scan stays sensitive</strong>
-            <p>Face images should be handled with consent, clear purpose, and careful storage rules.</p>
+          <div class="team-grid" aria-label="Team Kairo members">
+            <article v-for="member in teamMembers" :key="member.name" class="team-card">
+              <span>{{ member.name.slice(0, 1) }}</span>
+              <strong>{{ member.name }}</strong>
+              <small>{{ member.role }}</small>
+            </article>
           </div>
-        </section>
-
-        <section id="contact" class="landing-section contact-panel" aria-labelledby="contact-title">
-          <div>
-            <p class="eyebrow">Contact</p>
-            <h2 id="contact-title">Ready for the next UI step</h2>
-            <p>Next we can connect each card to real pages: scan, routine, appointment, history, and profile.</p>
-          </div>
-          <button class="primary-button" type="button" @click="openView('login')">Open Login</button>
         </section>
       </template>
 
@@ -521,5 +473,20 @@ onBeforeUnmount(() => {
         </div>
       </section>
     </main>
+
+    <footer v-if="!isLoggedIn && activeView !== 'login'" id="contact" class="site-footer">
+      <div>
+        <span class="brand-mark footer-mark">
+          <img :src="logo" alt="" />
+        </span>
+        <p class="eyebrow">Contact / Team Kairo</p>
+        <h2>Start understanding your skin with Skino.</h2>
+      </div>
+      <div class="footer-contact">
+        <strong>Skino — Your AI Skin Care Buddy</strong>
+        <p>Vue frontend, Laravel API, and Python AI service built for a complete skincare demo path.</p>
+        <button class="primary-button" type="button" @click="openView('login')">Open Login</button>
+      </div>
+    </footer>
   </div>
 </template>

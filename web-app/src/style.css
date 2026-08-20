@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Manrope:wght@700;800&family=Poppins:wght@400;500;600;700;800&display=swap");
 
 :root {
-  --bg: #fff9f2;
+  --bg: #fff4e9;
   --secondary-bg: #fffcf8;
   --surface: #fffdf9;
   --surface-soft: #fff4e9;
@@ -63,12 +63,7 @@ img {
 }
 
 .app-shell {
-  background:
-    linear-gradient(90deg, rgba(50, 25, 15, 0.035) 1px, transparent 1px),
-    linear-gradient(rgba(50, 25, 15, 0.035) 1px, transparent 1px),
-    radial-gradient(circle at 76% 10%, rgba(255, 106, 0, 0.16), transparent 30%),
-    linear-gradient(135deg, var(--bg), var(--secondary-bg) 52%, var(--surface-soft));
-  background-size: 56px 56px, 56px 56px, auto, auto;
+  background: var(--bg);
 }
 
 .site-header {
@@ -79,10 +74,10 @@ img {
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 22px;
   align-items: center;
-  width: min(1180px, calc(100% - 32px));
-  min-height: 96px;
+  width: min(1240px, calc(100% - 32px));
+  min-height: 106px;
   margin: 0 auto;
-  padding: 18px 22px;
+  padding: 20px 26px;
   border: 1px solid rgba(50, 25, 15, 0.12);
   border-radius: 999px;
   background: rgba(255, 253, 249, 0.88);
@@ -110,7 +105,7 @@ img {
 .brand-button strong {
   display: block;
   font-family: Manrope, sans-serif;
-  font-size: 1.08rem;
+  font-size: 1.22rem;
   font-weight: 800;
 }
 
@@ -119,7 +114,7 @@ img {
   margin-top: 2px;
   color: var(--subtle);
   font-family: "IBM Plex Mono", monospace;
-  font-size: 0.68rem;
+  font-size: 0.74rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -127,9 +122,9 @@ img {
 
 .brand-mark {
   display: grid;
-  width: 60px;
-  height: 60px;
-  flex: 0 0 60px;
+  width: 68px;
+  height: 68px;
+  flex: 0 0 68px;
   overflow: hidden;
   place-items: center;
   border: 1px solid var(--border);
@@ -147,17 +142,17 @@ img {
 .nav-links {
   display: flex;
   justify-content: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .nav-links button {
-  min-height: 50px;
+  min-height: 56px;
   border: 0;
-  padding: 0 15px;
+  padding: 0 18px;
   color: var(--muted);
   background: transparent;
   font-family: "IBM Plex Mono", monospace;
-  font-size: 0.72rem;
+  font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -189,9 +184,9 @@ img {
 
 .primary-button,
 .ghost-button {
-  min-height: 50px;
+  min-height: 56px;
   border-radius: 8px;
-  padding: 0 18px;
+  padding: 0 22px;
   font-weight: 700;
 }
 
@@ -219,7 +214,7 @@ img {
 main {
   width: min(100%, 1240px);
   margin: 0 auto;
-  padding: 58px clamp(18px, 4vw, 42px) 64px;
+  padding: 66px clamp(18px, 4vw, 42px) 64px;
 }
 
 .landing-hero,
@@ -231,8 +226,8 @@ main {
 }
 
 .landing-hero {
-  min-height: calc(100vh - 170px);
-  padding-bottom: 42px;
+  min-height: calc(100vh - 188px);
+  padding: 16px 0 54px;
 }
 
 .home-copy,
@@ -259,7 +254,7 @@ p {
 h1 {
   margin-bottom: 18px;
   font-family: Manrope, sans-serif;
-  font-size: clamp(3.25rem, 8.6vw, 7.6rem);
+  font-size: clamp(5rem, 8vw, 6.9rem);
   font-weight: 800;
   line-height: 0.84;
   letter-spacing: -0.035em;
@@ -349,42 +344,25 @@ h1 .orange-line {
 .hero-showcase {
   position: relative;
   display: grid;
-  min-height: 620px;
+  min-height: 600px;
   align-items: center;
   justify-items: center;
   padding: clamp(22px, 4vw, 34px);
   overflow: hidden;
-  background:
-    linear-gradient(155deg, rgba(255, 244, 233, 0.96), rgba(255, 253, 249, 0.96) 58%, rgba(255, 216, 181, 0.58)),
-    var(--surface);
+  background: rgba(255, 253, 249, 0.62);
   animation: soft-rise 0.9s ease both;
-}
-
-.hero-showcase::before {
-  position: absolute;
-  top: 34px;
-  left: 34px;
-  width: 126px;
-  height: 126px;
-  border: 1px solid rgba(50, 25, 15, 0.12);
-  border-radius: 8px;
-  background:
-    linear-gradient(90deg, rgba(255, 106, 0, 0.12) 1px, transparent 1px),
-    linear-gradient(rgba(255, 106, 0, 0.12) 1px, transparent 1px);
-  background-size: 18px 18px;
-  content: "";
 }
 
 .phone-preview {
   position: relative;
   z-index: 1;
   display: grid;
-  width: min(100%, 430px);
+  width: min(100%, 460px);
   gap: 18px;
   padding: 28px;
   background: var(--panel, #fffdf9);
   box-shadow: var(--shadow);
-  animation: slide-card-in 0.55s ease both, float-card 6s ease-in-out infinite;
+  animation: float-card 6s ease-in-out infinite;
 }
 
 .phone-topline {
@@ -558,14 +536,6 @@ h1 .orange-line {
   line-height: 1.35;
 }
 
-.hero-pager {
-  position: absolute;
-  left: 24px;
-  bottom: 24px;
-  display: flex;
-  gap: 8px;
-}
-
 @keyframes soft-rise {
   from {
     opacity: 0;
@@ -623,29 +593,6 @@ h1 .orange-line {
     top: 78%;
     opacity: 1;
   }
-}
-
-.hero-pager button {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--muted);
-  background: rgba(255, 253, 249, 0.9);
-}
-
-.hero-pager button.active {
-  border-color: var(--primary);
-  color: #ffffff;
-  background: var(--primary);
-}
-
-.hero-pager span {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
 }
 
 .landing-section {
@@ -781,7 +728,7 @@ h1 .orange-line {
 
 .about-band {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 0.9fr) minmax(460px, 1.1fr);
   gap: 22px;
   align-items: center;
   padding: clamp(22px, 4vw, 34px);
@@ -795,17 +742,48 @@ h1 .orange-line {
   margin-top: 14px;
 }
 
-.privacy-card {
+.team-grid {
   display: grid;
-  gap: 8px;
-  padding: 20px;
-  background: var(--green-light);
-  border-color: rgba(34, 181, 115, 0.18);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
-.privacy-card strong {
+.team-card {
+  display: grid;
+  min-height: 158px;
+  align-content: start;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px;
+  background: var(--surface);
+  box-shadow: var(--small-shadow);
+}
+
+.team-card span {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 999px;
+  color: #ffffff;
+  background: var(--primary);
+  font-family: Manrope, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.team-card strong {
   color: var(--text);
-  font-size: 1.24rem;
+  font-family: Manrope, sans-serif;
+  font-size: 1.12rem;
+  font-weight: 800;
+}
+
+.team-card small {
+  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.45;
 }
 
 .contact-panel {
@@ -820,6 +798,54 @@ h1 .orange-line {
 .contact-panel p {
   max-width: 620px;
   margin-top: 10px;
+}
+
+.site-footer {
+  display: grid;
+  width: min(1240px, calc(100% - 36px));
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 0.7fr);
+  gap: 28px;
+  align-items: end;
+  margin: 0 auto 28px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: clamp(24px, 5vw, 48px);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.site-footer h2 {
+  max-width: 780px;
+  margin: 14px 0 0;
+  font-family: Manrope, sans-serif;
+  font-size: clamp(2.6rem, 6vw, 5.6rem);
+  font-weight: 800;
+  line-height: 0.86;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.footer-mark {
+  margin-bottom: 16px;
+}
+
+.footer-contact {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+}
+
+.footer-contact strong {
+  font-family: Manrope, sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.footer-contact p {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 600;
+  line-height: 1.55;
 }
 
 .product-story {
@@ -1252,7 +1278,8 @@ input:focus {
   .story-grid,
   .routine-band,
   .memory-grid,
-  .safety-grid {
+  .safety-grid,
+  .site-footer {
     grid-template-columns: 1fr;
   }
 
@@ -1274,6 +1301,8 @@ input:focus {
 @media (max-width: 620px) {
   .site-header {
     gap: 12px;
+    width: min(100% - 20px, 1240px);
+    border-radius: 22px;
     padding: 12px 14px;
   }
 
@@ -1290,7 +1319,11 @@ input:focus {
   .nav-links button {
     min-height: 40px;
     padding: 0 12px;
-    font-size: 0.92rem;
+    font-size: 0.78rem;
+  }
+
+  h1 {
+    font-size: clamp(3.1rem, 16vw, 5rem);
   }
 
   .primary-button,
@@ -1317,6 +1350,10 @@ input:focus {
     padding: 14px;
   }
 
+  .phone-preview {
+    padding: 18px;
+  }
+
   .floating-note {
     position: static;
     width: 100%;
@@ -1337,6 +1374,15 @@ input:focus {
   .hero-stat-strip,
   .login-benefits {
     display: grid;
+  }
+
+  .team-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .site-footer {
+    width: min(100% - 20px, 1240px);
+    margin-bottom: 18px;
   }
 
   .hero-actions .primary-button,
