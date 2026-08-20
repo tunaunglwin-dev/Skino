@@ -12,7 +12,7 @@ class SkinAnalyzer
     /**
      * @return array<string, mixed>
      */
-    public function analyze(UploadedFile $image): array
+    public function analyze(UploadedFile $image, ?string $faceLandmarks = null): array
     {
         $baseUrl = rtrim((string) config('services.skin_ai.base_url'), '/');
 
@@ -27,7 +27,9 @@ class SkinAnalyzer
                     file_get_contents($image->getRealPath()),
                     $image->getClientOriginalName() ?: 'skin-image.jpg',
                 )
-                ->post($baseUrl.'/analyze')
+                ->post($baseUrl.'/analyze', array_filter([
+                    'face_landmarks' => $faceLandmarks,
+                ], static fn (mixed $value): bool => $value !== null && $value !== ''))
                 ->throw()
                 ->json();
         } catch (RequestException $exception) {

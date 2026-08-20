@@ -87,7 +87,11 @@ class UserRoutineController extends Controller
     {
         $validated = $request->validate([
             'morning_done' => ['sometimes', 'boolean'],
+            'morning_steps' => ['sometimes', 'array', 'max:12'],
+            'morning_steps.*' => ['string', 'max:160'],
             'night_done' => ['sometimes', 'boolean'],
+            'night_steps' => ['sometimes', 'array', 'max:12'],
+            'night_steps.*' => ['string', 'max:160'],
             'check_date' => ['sometimes', 'date'],
         ]);
 
@@ -101,7 +105,15 @@ class UserRoutineController extends Controller
             ? Carbon::parse($validated['check_date'])->toDateString()
             : today()->toDateString();
 
-        $checkIn = RoutineCheckIn::query()->firstOrCreate([
+        // SQLite can persist a date cast as midnight ("Y-m-d 00:00:00").
+        // A plain equality lookup with "Y-m-d" then misses the existing row
+        // and collides with the unique routine/date index on the next insert.
+        $checkIn = RoutineCheckIn::query()
+            ->where('user_routine_id', $routine->id)
+            ->whereDate('check_date', $checkDate)
+            ->first();
+
+        $checkIn ??= RoutineCheckIn::query()->create([
             'user_routine_id' => $routine->id,
             'check_date' => $checkDate,
         ]);
@@ -111,9 +123,24 @@ class UserRoutineController extends Controller
                 continue;
             }
 
+            // Daily completion is an audit trail. Once marked complete it may
+            // not be undone or have its completion timestamp erased.
+            if ($checkIn->{$field}) {
+                continue;
+            }
+
             $timestampField = str_replace('_done', '_completed_at', $field);
             $checkIn->{$field} = (bool) $validated[$field];
             $checkIn->{$timestampField} = $validated[$field] ? now() : null;
+        }
+
+        foreach (['morning_steps', 'night_steps'] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $checkIn->{$field} = array_values(array_unique([
+                    ...($checkIn->{$field} ?? []),
+                    ...$validated[$field],
+                ]));
+            }
         }
 
         $checkIn->save();

@@ -11,7 +11,9 @@ class RoutineCheckIn extends Model
         'user_routine_id',
         'check_date',
         'morning_done',
+        'morning_steps',
         'night_done',
+        'night_steps',
         'morning_completed_at',
         'night_completed_at',
     ];
@@ -21,7 +23,9 @@ class RoutineCheckIn extends Model
         return [
             'check_date' => 'date',
             'morning_done' => 'boolean',
+            'morning_steps' => 'array',
             'night_done' => 'boolean',
+            'night_steps' => 'array',
             'morning_completed_at' => 'datetime',
             'night_completed_at' => 'datetime',
         ];

@@ -11,7 +11,13 @@ class AiTrainingConsent extends Model
 {
     public const TYPE_MODEL_TRAINING = 'model_training';
 
+    public const TYPE_TERMS = 'terms_and_privacy';
+
+    public const TYPE_SCAN_PROCESSING = 'scan_processing';
+
     public const CURRENT_POLICY_VERSION = '2026-07-24';
+
+    public const REQUIRED_POLICY_VERSION = '2026-08-20';
 
     /**
      * @return BelongsTo<User, AiTrainingConsent>

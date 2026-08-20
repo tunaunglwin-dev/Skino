@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\AiTrainingConsent;
+use App\Models\ModelTrainingSample;
 use App\Models\SkinAnalysis;
 use App\Models\SkinAnalysisImage;
 use App\Models\User;
@@ -65,8 +67,15 @@ class SkinAnalysisApiTest extends TestCase
         $this->seed();
         Sanctum::actingAs(User::factory()->create());
 
+        $faceLandmarks = json_encode(array_fill(0, 468, [
+            'x' => 0.5,
+            'y' => 0.5,
+            'z' => 0.0,
+        ]), JSON_THROW_ON_ERROR);
+
         $response = $this->postJson('/api/skin-analyses', [
             'image' => $this->fakePngUpload(),
+            'face_landmarks' => $faceLandmarks,
         ]);
 
         $response
@@ -91,6 +100,8 @@ class SkinAnalysisApiTest extends TestCase
         ]);
         $this->assertDatabaseCount('model_training_samples', 0);
 
+        Http::assertSent(fn ($request) => str_contains($request->body(), 'face_landmarks')
+            && str_contains($request->body(), $faceLandmarks));
         Http::assertSentCount(1);
     }
 
@@ -110,11 +121,19 @@ class SkinAnalysisApiTest extends TestCase
         ]);
 
         $this->seed();
-        Sanctum::actingAs(User::factory()->create());
+        Sanctum::actingAs(User::factory()->create([
+            'age_band' => '25_34',
+            'skin_tone_scale' => 6,
+            'skin_goals' => ['acne'],
+        ]));
 
         $response = $this->postJson('/api/skin-analyses', [
             'image' => $this->fakePngUpload(),
             'allow_model_training' => true,
+            'capture_mode' => 'multi_frame_best',
+            'frame_count' => 3,
+            'client_quality_score' => 84,
+            'device_category' => 'mobile',
         ]);
 
         $response
@@ -131,6 +150,12 @@ class SkinAnalysisApiTest extends TestCase
             'review_status' => 'pending',
             'training_status' => 'queued',
         ]);
+
+        $metadata = ModelTrainingSample::query()->firstOrFail()->anonymized_metadata;
+        $this->assertSame('25_34', $metadata['age_band']);
+        $this->assertSame(6, $metadata['skin_tone_scale']);
+        $this->assertSame('multi_frame_best', $metadata['capture_context']['mode']);
+        $this->assertSame(3, $metadata['capture_context']['frame_count']);
     }
 
     public function test_user_can_view_and_revoke_model_training_consent(): void
@@ -157,6 +182,39 @@ class SkinAnalysisApiTest extends TestCase
         $this->assertDatabaseHas('ai_training_consents', [
             'user_id' => $user->id,
             'granted' => false,
+        ]);
+    }
+
+    public function test_user_can_accept_versioned_required_consents(): void
+    {
+        $user = User::factory()->create();
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/privacy/required-consents')
+            ->assertOk()
+            ->assertJsonPath('data.complete', false)
+            ->assertJsonPath('data.terms.granted', false)
+            ->assertJsonPath('data.scan_processing.granted', false);
+
+        $this->putJson('/api/privacy/required-consents', [
+            'terms' => true,
+            'scan_processing' => true,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.complete', true)
+            ->assertJsonPath('data.policy_version', AiTrainingConsent::REQUIRED_POLICY_VERSION);
+
+        $this->assertDatabaseHas('ai_training_consents', [
+            'user_id' => $user->id,
+            'consent_type' => AiTrainingConsent::TYPE_TERMS,
+            'policy_version' => AiTrainingConsent::REQUIRED_POLICY_VERSION,
+            'granted' => true,
+        ]);
+        $this->assertDatabaseHas('ai_training_consents', [
+            'user_id' => $user->id,
+            'consent_type' => AiTrainingConsent::TYPE_SCAN_PROCESSING,
+            'policy_version' => AiTrainingConsent::REQUIRED_POLICY_VERSION,
+            'granted' => true,
         ]);
     }
 

@@ -1,612 +1,425 @@
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import logo from './assets/branding/skino_logo.png'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import UserWorkspace from './components/UserWorkspace.vue'
+import PricingPlans from './components/PricingPlans.vue'
+import {
+  clearSession,
+  fetchMe,
+  fetchRequiredConsents,
+  fetchTrainingConsent,
+  googleClientId,
+  loadGoogleIdentity,
+  loginWithGoogle,
+  loginWithPassword,
+  logout,
+  readSession,
+  saveSession,
+  updateTrainingConsent,
+  updateRequiredConsents,
+} from './services/skinoApi'
+import logo from './assets/branding/skino_logo.webp'
+import waveMascot from './assets/branding/skino_little_guy_wave.png'
+import careMascot from './assets/branding/skino_little_guy_care.png'
+import specialistSlide from './assets/branding/hero-slide-specialist.jpg'
+import analysisSlide from './assets/branding/hero-slide-analysis.jpg'
+import routineSlide from './assets/branding/hero-slide-routine.jpg'
 import scanIcon from './assets/branding/skino_icon_scan.png'
 import routineIcon from './assets/branding/skino_icon_routine.png'
 import specialistIcon from './assets/branding/skino_icon_specialist.png'
-import historyIcon from './assets/branding/skino_icon_history.png'
-import progressIcon from './assets/branding/skino_icon_progress.png'
-import reportIcon from './assets/branding/skino_icon_report.png'
+import historyIcon from './assets/branding/skino_icon_history.webp'
+import progressIcon from './assets/branding/skino_icon_progress.webp'
+import reportIcon from './assets/branding/skino_icon_report.webp'
 
 const activeView = ref('home')
 const isLoggedIn = ref(false)
+const onboardingComplete = ref(false)
+const onboardingStep = ref(0)
 const language = ref('en')
+const mobileMenuOpen = ref(false)
 const showStickyActions = ref(false)
+const isHeaderCompact = ref(false)
+const motionReady = ref(false)
+const currentPublicSection = ref('home')
+const journeyProgress = ref(0)
+const acceptedTerms = ref(false)
+const acceptedScanConsent = ref(false)
+const allowModelTraining = ref(false)
+const showPassword = ref(false)
+const session = ref(null)
+const authLoading = ref(false)
+const authError = ref('')
+const onboardingError = ref('')
+const googleButton = ref(null)
+const loginForm = ref({ email: '', password: '', remember: true })
+const currentHeroSlide = ref(0)
+const heroTouchStartX = ref(0)
+let heroSliderTimer = null
+let googleIdentityInitialized = false
+let revealObserver = null
 
 const copy = {
   en: {
-    home: 'Home',
-    services: 'Services',
-    about: 'About us',
-    contact: 'Contact',
-    login: 'Login',
-    logout: 'Logout',
-    brandNote: 'AI beauty care',
-    eyebrow: 'Skino / Personal Skin Intelligence',
-    heroTitle: ['Your skin', 'has a story.', 'Skino listens.'],
-    heroBody:
-      'Try a face beauty scan first. Understand visible concerns, get gentle routine guidance, and save progress when you are ready.',
-    startScan: 'Start scan',
-    exploreServices: 'Services',
-    howItWorks: 'How it works',
-    heroChips: ['Guest scan', 'No long setup', 'Routine ready'],
-    quickTitle: 'Ready for your first scan',
-    quickText: 'Scan with the acne model, get focused concerns, then move into daily care and progress tracking.',
-    actionCards: [
-      ['Face beauty scan', 'Check acne severity and skin score in under a minute.'],
-      ['Daily improvement', 'Gentle routines, reminders, and next scan check-ins.'],
-      ['Specialist help', 'Recommended when acne looks moderate, severe, or uncertain.'],
-    ],
-    howTitle: 'From scan to daily care in three simple steps',
-    howSteps: [
-      ['Scan', 'Upload or capture a clear face image for visible skin guidance.'],
-      ['Understand', 'Review skin type, concerns, score, and simple routine advice.'],
-      ['Improve', 'Follow daily care, track progress, and request specialist help.'],
-    ],
-    servicesTitle: 'Face scan, routine, care, and progress in one path',
-    previewDashboard: 'Preview dashboard',
-    storyTitle: 'Understand what you see, then know what to do next',
-    noticedTitle: 'What Skino noticed',
-    noticedText:
-      'Skino translates scan results into simple care language: visible skin type, concern level, routine reason, and when to ask a specialist.',
-    routineTitle: 'Your skin. Your products. Your routine.',
-    routineText:
-      'The dashboard keeps daily steps, friendly reminders, and progress tracking easy to reach from the first screen.',
-    memoryTitle: 'See how far your care journey has moved',
-    safetyTitle: 'Smart AI with clear limits',
-    aboutTitle: 'Team Kairo builds Skino for clear skin-care guidance',
-    aboutText:
-      'Skino is a wellness and skincare assistant, not a medical diagnosis system. The web app path keeps Laravel as the business API, Python as the AI service, and Vue.js as the customer experience.',
-    footerTitle: 'Start understanding your skin with Skino.',
-    footerText: 'Vue frontend, Laravel API, and Python AI service built for a complete skincare demo path.',
-    openLogin: 'Open login',
-    loginTitle: 'Welcome back to Skino',
-    loginText:
-      'Continue into your skin care workspace. This preview uses the final visual direction before API auth is connected.',
-    loginBenefits: ['Private skin scan flow', 'Routine and appointment modules', 'Mobile-first Vue dashboard'],
-    loginSubtitle: 'Preview the customer dashboard',
-    email: 'Email',
-    password: 'Password',
-    goDashboard: 'Go to dashboard',
-    dashboardTitle: 'Your Skino workspace',
-    dashboardText: 'Mobile-responsive module cards for scan, routine, specialist, appointment, history, and progress.',
-    todayPlan: "Today's beauty plan",
-    score: 'Skin score',
-    demo: 'Demo preview',
+    home: 'Home', services: 'Services', how: 'How it works', safety: 'Safety', about: 'About Us', contact: 'Contact Us', login: 'Sign in',
+    eyebrow: 'Skino / Personal skin intelligence',
+    heroTitle: ['Your skin has a story.', 'Skino listens.'],
+    heroBody: 'Scan your skin, understand visible concerns, and build a routine that is simple enough to follow every day.',
+    startScan: 'Start skin scan', exploreServices: 'See how it works', scanReady: 'Face scan ready', scanHint: 'Clear light · Front view · No filter',
+    howTitle: 'Clear care in three small steps.', howText: 'No complicated setup. Start with one scan and always know what comes next.',
+    serviceTitle: 'Everything your skin journey needs.', serviceText: 'Compact tools that work together—from the first scan to daily progress.',
+    safetyTitle: 'Smart AI. Clear limits.', safetyText: 'Skino gives care guidance, protects your choices, and tells you when professional help matters.',
+    routineTitle: 'A routine made for real life.', routineText: 'Simple morning and evening steps, gentle reminders, and progress you can actually see.',
+    progressTitle: 'Small habits. Visible momentum.', aboutTitle: 'Skincare guidance should feel calm and clear.',
+    aboutText: 'Team Kairo built Skino as a wellness and skincare assistant—not a medical diagnosis system. Your choices stay visible and under your control.',
+    ctaTitle: 'Ready to understand your skin?', ctaText: 'Your first guided scan starts with a quick privacy check.',
+    loginTitle: 'Welcome back.', loginText: 'Sign in to continue your private skincare journey.', email: 'Email address', password: 'Password',
+    remember: 'Keep me signed in', forgot: 'Forgot password?', loginButton: 'Continue to Skino', backHome: 'Back to home',
+    secureNote: 'Your account and scan history stay private.', dashboardHello: 'Good morning, May', dashboardText: 'Your skin plan is ready. Keep today simple.', logout: 'Sign out',
   },
   my: {
-    home: 'ပင်မ',
-    services: 'ဝန်ဆောင်မှု',
-    about: 'အကြောင်း',
-    contact: 'ဆက်သွယ်ရန်',
-    login: 'Login',
-    logout: 'Logout',
-    brandNote: 'AI beauty care',
-    eyebrow: 'Skino / အသားအရေ AI',
-    heroTitle: ['Skino မှ', 'ကြိုဆိုပါတယ်', 'စကင်စမယ်'],
-    heroBody:
-      'မျက်နှာအလှအတွက် စကင်အရင်လုပ်ကြည့်ပါ။ Concern များကိုနားလည်ပြီး routine နှင့် progress ကို လွယ်လွယ်ကူကူဆက်သွားပါ။',
-    startScan: 'စကင်စတင်မယ်',
-    exploreServices: 'ဝန်ဆောင်မှု',
-    howItWorks: 'ဘယ်လိုလုပ်သလဲ',
-    heroChips: ['Guest scan', 'Setup မလို', 'Routine ready'],
-    quickTitle: 'ပထမဆုံး စကင်လုပ်ရန် အသင့်',
-    quickText: 'ဝက်ခြံအခြေအနေ၊ concern များကိုစစ်ပြီး နေ့စဉ် routine နှင့် progress tracking သို့ ဆက်သွားပါ။',
-    actionCards: [
-      ['မျက်နှာအလှ စကင်', 'ဝက်ခြံအခြေအနေနှင့် အသားအရေ score ကို အမြန်စစ်ပါ။'],
-      ['နေ့စဉ်တိုးတက်မှု', 'နူးညံ့တဲ့ routine၊ သတိပေးချက်နဲ့ နောက်စကင်ချိန်များ။'],
-      ['Specialist အကူအညီ', 'ဝက်ခြံအခြေအနေ များ၊ ပြင်း၊ မသေချာလျှင် အကြံပြုပါမယ်။'],
-    ],
-    howTitle: 'စကင်မှ နေ့စဉ် care အထိ အဆင့် ၃ ဆင့်',
-    howSteps: [
-      ['စကင်', 'မျက်နှာပုံကို upload/capture လုပ်ပြီး visible skin guidance ရယူပါ။'],
-      ['နားလည်', 'Skin type၊ concern၊ score နှင့် routine အကြံပြုချက်ကို ကြည့်ပါ။'],
-      ['တိုးတက်', 'နေ့စဉ် care လုပ်၊ progress ကြည့်ပြီး specialist help တောင်းနိုင်ပါတယ်။'],
-    ],
-    servicesTitle: 'Face scan, routine, care နှင့် progress ကို တစ်နေရာတည်းမှာ',
-    previewDashboard: 'Dashboard ကြည့်မယ်',
-    storyTitle: 'တွေ့ရတာကိုနားလည်ပြီး နောက်တစ်ဆင့်ကို သိပါ',
-    noticedTitle: 'Skino တွေ့ရှိချက်',
-    noticedText:
-      'Skino က scan result ကို skin type၊ concern level၊ routine reason နှင့် specialist လိုအပ်ချိန်အဖြစ် ရိုးရိုးရှင်းရှင်း ပြပေးပါတယ်။',
-    routineTitle: 'သင့် skin. သင့် products. သင့် routine.',
-    routineText:
-      'Dashboard ထဲမှာ daily steps၊ reminder နှင့် progress tracking ကို ပထမ screen ကနေ လွယ်လွယ်ကူကူသုံးနိုင်အောင်ထားပါတယ်။',
-    memoryTitle: 'သင့် care journey တိုးတက်မှုကို ကြည့်ပါ',
-    safetyTitle: 'AI ကို ရှင်းလင်းသော limit များနဲ့ သုံးမယ်',
-    aboutTitle: 'Team Kairo က Skino ကို skincare guidance အတွက် တည်ဆောက်ထားပါတယ်',
-    aboutText:
-      'Skino သည် wellness နှင့် skincare assistant ဖြစ်ပြီး medical diagnosis system မဟုတ်ပါ။ Web app path မှာ Laravel API၊ Python AI service နှင့် Vue.js customer experience ကို သုံးထားပါတယ်။',
-    footerTitle: 'Skino နဲ့ သင့် skin ကို စတင်နားလည်ပါ။',
-    footerText: 'Vue frontend၊ Laravel API နှင့် Python AI service ပါဝင်သော skincare demo path။',
-    openLogin: 'Login ဖွင့်မယ်',
-    loginTitle: 'Skino မှ ကြိုဆိုပါတယ်',
-    loginText: 'သင့် skin care workspace ထဲဝင်ပါ။ API auth မချိတ်ခင် final visual direction preview ဖြစ်ပါတယ်။',
-    loginBenefits: ['Private skin scan flow', 'Routine နှင့် appointment module', 'Mobile-first Vue dashboard'],
-    loginSubtitle: 'Customer dashboard preview',
-    email: 'Email',
-    password: 'Password',
-    goDashboard: 'Dashboard သို့',
-    dashboardTitle: 'သင့် Skino workspace',
-    dashboardText: 'Scan, routine, specialist, appointment, history နှင့် progress module များကို mobile-responsive card များဖြင့်ထားပါတယ်။',
-    todayPlan: 'ဒီနေ့ beauty plan',
-    score: 'Skin score',
-    demo: 'Demo preview',
+    home: 'ပင်မ', services: 'ဝန်ဆောင်မှု', how: 'အသုံးပြုပုံ', safety: 'လုံခြုံမှု', about: 'အကြောင်း', contact: 'ဆက်သွယ်ရန်', login: 'ဝင်မယ်',
+    eyebrow: 'Skino / ကိုယ်ပိုင် skin intelligence', heroTitle: ['သင့် skin မှာ ဇာတ်လမ်းရှိတယ်။', 'Skino နားထောင်တယ်။'],
+    heroBody: 'Skin scan လုပ်၊ မြင်ရသော concern များကို နားလည်ပြီး နေ့တိုင်း လိုက်လုပ်နိုင်မည့် ရိုးရှင်းသော routine တည်ဆောက်ပါ။',
+    startScan: 'Skin scan စမယ်', exploreServices: 'အသုံးပြုပုံကြည့်မယ်', scanReady: 'Face scan အဆင်သင့်', scanHint: 'အလင်းကောင်း · မျက်နှာတည့်တည့် · Filter မပါ',
+    howTitle: 'အဆင့်သုံးဆင့်နဲ့ ရှင်းလင်းသော care.', howText: 'ရှုပ်ထွေးတဲ့ setup မလိုပါ။ Scan တစ်ခုပြီးရင် နောက်တစ်ဆင့်ကို အမြဲသိနိုင်ပါတယ်။',
+    serviceTitle: 'သင့် skin journey အတွက် လိုအပ်သမျှ။', serviceText: 'ပထမ scan မှ နေ့စဉ် progress အထိ အတူတကွ အလုပ်လုပ်သော tools များ။',
+    safetyTitle: 'Smart AI. ရှင်းလင်းသော limits.', safetyText: 'Skino က care guidance ပေးပြီး သင့်ရွေးချယ်မှုကို ကာကွယ်ကာ professional help လိုအပ်ချိန်ကို ပြောပြပါတယ်။',
+    routineTitle: 'တကယ်လိုက်လုပ်နိုင်မည့် routine.', routineText: 'ရိုးရှင်းသော မနက်/ည steps၊ နူးညံ့သော reminder များနှင့် မြင်နိုင်သော progress။',
+    progressTitle: 'အလေ့အကျင့်သေးသေး။ မြင်သာတဲ့တိုးတက်မှု။', aboutTitle: 'Skincare guidance က ငြိမ်သက်ပြီး နားလည်လွယ်ရမယ်။',
+    aboutText: 'Team Kairo က Skino ကို wellness နဲ့ skincare assistant အဖြစ် တည်ဆောက်ထားပါတယ်—medical diagnosis system မဟုတ်ပါ။',
+    ctaTitle: 'သင့် skin ကို နားလည်ဖို့ အဆင်သင့်လား?', ctaText: 'ပထမ guided scan ကို privacy check အတိုလေးနဲ့ စပါမယ်။',
+    loginTitle: 'ပြန်လည်ကြိုဆိုပါတယ်။', loginText: 'သင့် private skincare journey ကို ဆက်ရန် sign in ဝင်ပါ။', email: 'Email address', password: 'Password',
+    remember: 'Login မှတ်ထားမယ်', forgot: 'Password မေ့နေပါသလား?', loginButton: 'Skino သို့ ဆက်မယ်', backHome: 'ပင်မသို့ ပြန်မယ်',
+    secureNote: 'သင့် account နှင့် scan history ကို private ထားပါတယ်။', dashboardHello: 'မင်္ဂလာနံနက်ခင်းပါ May', dashboardText: 'ဒီနေ့ skin plan အဆင်သင့်ပါပြီ။ ရိုးရိုးရှင်းရှင်း ဆက်လုပ်ပါ။', logout: 'ထွက်မယ်',
   },
 }
 
 const t = computed(() => copy[language.value])
-
-const publicNavItems = computed(() => [
-  { label: t.value.home, view: 'home', target: 'home' },
-  { label: t.value.services, view: 'services', target: 'services' },
-  { label: t.value.about, view: 'about', target: 'about' },
-  { label: t.value.contact, view: 'contact', target: 'contact' },
-  { label: t.value.login, view: 'login' },
+const navItems = computed(() => [
+  { label: t.value.home, target: 'home' },
+  { label: t.value.services, target: 'services' },
+  { label: t.value.about, target: 'about' },
+  { label: t.value.contact, target: 'contact' },
 ])
-
-const howStepIcons = [scanIcon, reportIcon, routineIcon]
-const actionIcons = [scanIcon, routineIcon, specialistIcon]
-
-const howSteps = computed(() => t.value.howSteps.map(([title, text], index) => ({
-  title,
-  text,
-  icon: howStepIcons[index],
-})))
-
-const quickActions = computed(() => t.value.actionCards.map(([title, text], index) => ({
-  title,
-  text,
-  icon: actionIcons[index],
-})))
-
-const modules = computed(() => [
-  {
-    title: t.value.actionCards[0][0],
-    subtitle: t.value.actionCards[0][1],
-    icon: scanIcon,
-    tone: '#ff6a00',
-    status: 'Ready',
-  },
-  {
-    title: t.value.actionCards[1][0],
-    subtitle: t.value.actionCards[1][1],
-    icon: routineIcon,
-    tone: '#22b573',
-    status: 'Daily',
-  },
-  {
-    title: t.value.actionCards[2][0],
-    subtitle: t.value.actionCards[2][1],
-    icon: specialistIcon,
-    tone: '#7d5cff',
-    status: 'Care',
-  },
-  {
-    title: 'Appointment',
-    subtitle: 'Request a consultation and track the current status.',
-    icon: reportIcon,
-    tone: '#ff9a3d',
-    status: 'Request',
-  },
-  {
-    title: 'History',
-    subtitle: 'Review previous scans, scores, and concern changes.',
-    icon: historyIcon,
-    tone: '#7d5cff',
-    status: 'Timeline',
-  },
-  {
-    title: 'Progress',
-    subtitle: 'See how your skin journey changes across check-ins.',
-    icon: progressIcon,
-    tone: '#22b573',
-    status: 'Track',
-  },
+const heroSlides = [
+  { image: specialistSlide, eyebrow: 'Specialist support', title: 'Expert care when you need it.', text: 'Share a saved skin result and request a focused specialist review.' },
+  { image: analysisSlide, eyebrow: 'AI skin insights', title: 'Understand every visible signal.', text: 'See concerns and face-zone details in language that is easy to follow.' },
+  { image: routineSlide, eyebrow: 'Daily routine', title: 'Turn results into simple care.', text: 'Build a gentle morning and night routine around your latest scan.' },
+]
+const steps = computed(() => [
+  { number: '01', title: 'Scan', text: language.value === 'en' ? 'Use a clear front-facing photo.' : 'မျက်နှာတည့်တည့် ပုံကြည်ကြည် သုံးပါ။', icon: scanIcon },
+  { number: '02', title: language.value === 'en' ? 'Understand' : 'နားလည်', text: language.value === 'en' ? 'See concerns in plain language.' : 'Concern များကို ရိုးရှင်းစွာ ကြည့်ပါ။', icon: reportIcon },
+  { number: '03', title: language.value === 'en' ? 'Care' : 'ဂရုစိုက်', text: language.value === 'en' ? 'Follow a gentle daily routine.' : 'နူးညံ့သော daily routine ကို လိုက်လုပ်ပါ။', icon: routineIcon },
 ])
-
-const safetyCards = [
-  {
-    number: '01',
-    title: 'Guidance, not diagnosis',
-    text: 'Skino explains visible patterns for beauty care and never replaces medical advice.',
-  },
-  {
-    number: '02',
-    title: 'Consent first',
-    text: 'Face scans are sensitive, so the user must understand what is being processed.',
-  },
-  {
-    number: '03',
-    title: 'Specialist handoff',
-    text: 'When a concern looks uncertain or serious, the product path moves toward care support.',
-  },
-  {
-    number: '04',
-    title: 'History with control',
-    text: 'Progress tracking should help users compare changes without hiding privacy choices.',
-  },
+const modules = computed(() => language.value === 'en' ? [
+  { title: 'Guided face scan', subtitle: 'Camera guidance helps you capture a clear, front-facing photo before analysis.', icon: scanIcon, status: 'Start here', tone: '#f36a16', feature: 'Camera + quality check' },
+  { title: 'Clear skin results', subtitle: 'Understand your score, visible concerns, and each facial zone without confusing medical language.', icon: reportIcon, status: 'Understand', tone: '#7c65b5', feature: 'Score + skin map' },
+  { title: 'Daily care routine', subtitle: 'Turn your latest result into small morning and evening tasks you can actually track.', icon: routineIcon, status: 'Take action', tone: '#0e5c56', feature: 'To-do + weekly record' },
+  { title: 'History, safety and support', subtitle: 'Revisit saved scans, control your privacy choices, or share a result when specialist support matters.', icon: specialistIcon, status: 'Stay supported', tone: '#38748f', feature: 'History + privacy + specialist' },
+] : [
+  { title: 'လမ်းညွှန်ပါ မျက်နှာစကင်', subtitle: 'မစစ်ဆေးမီ ရှေ့တည့်တည့် ကြည်လင်သောပုံရရန် ကင်မရာလမ်းညွှန်ပေးပါသည်။', icon: scanIcon, status: 'ဒီမှာစမယ်', tone: '#f36a16', feature: 'ကင်မရာ + အရည်အသွေးစစ်ဆေးမှု' },
+  { title: 'ရှင်းလင်းသော ရလဒ်', subtitle: 'ရှုပ်ထွေးသော ဆေးဘက်ဝေါဟာရမပါဘဲ အမှတ်၊ မြင်ရသောအချက်နှင့် မျက်နှာနေရာခွဲကို နားလည်ပါ။', icon: reportIcon, status: 'နားလည်မယ်', tone: '#7c65b5', feature: 'အမှတ် + အသားအရေမြေပုံ' },
+  { title: 'နေ့စဉ် ထိန်းသိမ်းမှု', subtitle: 'နောက်ဆုံးရလဒ်ကို မှတ်တမ်းတင်နိုင်သော မနက်နှင့် ည လုပ်ဆောင်ချက်ငယ်များအဖြစ် ပြောင်းပါ။', icon: routineIcon, status: 'စလုပ်မယ်', tone: '#0e5c56', feature: 'လုပ်စရာ + အပတ်စဉ်မှတ်တမ်း' },
+  { title: 'မှတ်တမ်း၊ လုံခြုံမှုနှင့် အကူအညီ', subtitle: 'သိမ်းထားသောစကင်ကို ပြန်ကြည့်၊ privacy ကို ထိန်းချုပ် သို့မဟုတ် ကျွမ်းကျင်သူထံ ရလဒ်မျှဝေပါ။', icon: specialistIcon, status: 'အကူအညီရမယ်', tone: '#38748f', feature: 'မှတ်တမ်း + privacy + ကျွမ်းကျင်သူ' },
+])
+const onboardingPages = [
+  { kicker: 'Welcome / 01', title: 'Meet your AI skincare bestie.', body: 'Skino helps you scan your face, understand visible skin concerns, and build a simple care routine.', image: waveMascot },
+  { kicker: 'Safe scan / 02', title: 'Scan with care.', body: 'Use clear light, keep your full face visible, and treat every result as guidance—not a medical diagnosis.', image: scanIcon },
+  { kicker: 'Consent / 03', title: 'Your face. Your choice.', body: 'Your face scan may contain sensitive skin and biometric information. Skino uses it only for analysis, result display, and care guidance.', image: reportIcon },
 ]
-
-const analysisBars = [
-  { label: 'Skin balance', value: 82, tone: '#ff6a00' },
-  { label: 'Routine match', value: 76, tone: '#22b573' },
-  { label: 'Scan clarity', value: 92, tone: '#7d5cff' },
-  { label: 'Progress signal', value: 68, tone: '#ff9a3d' },
+const onboardingConsents = [
+  { key: 'terms', icon: historyIcon, title: 'Terms of Service and Privacy Policy', text: 'I agree to Skino’s service terms and understand how my account, scan, and routine information are handled.', badge: 'Required' },
+  { key: 'scan', icon: scanIcon, title: 'AI face-scan processing', text: 'I allow Skino to process my face photo for skin analysis, result display, and care guidance. This is not medical advice.', badge: 'Required' },
+  { key: 'training', icon: progressIcon, title: 'Help improve Skino AI', text: 'Allow reviewed scans to help improve the model. This is optional and can be changed later from your profile.', badge: 'Optional' },
 ]
+const currentOnboarding = computed(() => onboardingPages[onboardingStep.value])
+const isLastOnboardingStep = computed(() => onboardingStep.value === onboardingPages.length - 1)
+const canFinishOnboarding = computed(() => acceptedTerms.value && acceptedScanConsent.value)
 
-const routineSteps = [
-  'Gentle cleanser',
-  'Hydrating care',
-  'Light moisturizer',
-  'Daily sunscreen',
-]
-
-const memoryStats = [
-  { value: '+18%', label: 'Routine consistency' },
-  { value: '12', label: 'Day streak' },
-  { value: '06', label: 'Weekly check-ins' },
-  { value: '82', label: 'Latest score' },
-]
-
-const teamMembers = [
-  { name: 'Tun Aung Lwin', role: 'Project lead' },
-  { name: 'Sai Bhone Myat', role: 'Frontend and product UI' },
-  { name: 'Mn', role: 'Backend and data flow' },
-  { name: 'Lei War Khaing', role: 'AI and product research' },
-]
-
-const currentTitle = computed(() => (isLoggedIn.value ? 'User Dashboard' : 'Skino'))
-
-function openView(view) {
-  activeView.value = view
-  if (view === 'login') {
-    return
-  }
-
-  const target = publicNavItems.value.find((item) => item.view === view)?.target
-  window.setTimeout(() => {
-    const section = target ? document.getElementById(target) : null
-    if (section) {
-      section.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      return
-    }
-
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, 0)
+function scrollTo(target) {
+  activeView.value = target
+  currentPublicSection.value = target
+  mobileMenuOpen.value = false
+  nextTick(() => {
+    if (target === 'home') { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
+    document.getElementById(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
 }
-
-function enterDashboard() {
+function choosePublicPlan() { openLogin() }
+function openLogin() { activeView.value = 'login'; mobileMenuOpen.value = false; window.scrollTo({ top: 0, behavior: 'smooth' }) }
+function openLegal(view) { activeView.value = view; mobileMenuOpen.value = false; window.scrollTo({ top: 0, behavior: 'smooth' }) }
+function startHeroSlider() {
+  window.clearInterval(heroSliderTimer)
+  heroSliderTimer = window.setInterval(() => { currentHeroSlide.value = (currentHeroSlide.value + 1) % heroSlides.length }, 5200)
+}
+function stopHeroSlider() { window.clearInterval(heroSliderTimer) }
+function goToHeroSlide(index) {
+  currentHeroSlide.value = (index + heroSlides.length) % heroSlides.length
+  startHeroSlider()
+}
+function handleHeroTouchStart(event) { heroTouchStartX.value = event.touches[0]?.clientX || 0 }
+function handleHeroTouchEnd(event) {
+  const distance = (event.changedTouches[0]?.clientX || 0) - heroTouchStartX.value
+  if (Math.abs(distance) > 45) goToHeroSlide(currentHeroSlide.value + (distance < 0 ? 1 : -1))
+}
+function onboardingKey(userId = session.value?.user?.id) { return `skino.web.onboarding.${userId || 'guest'}` }
+async function applySession(nextSession) {
+  session.value = nextSession
+  saveSession(nextSession)
   isLoggedIn.value = true
-  activeView.value = 'dashboard'
+  onboardingStep.value = 0
+  const [requiredResult, trainingResult] = await Promise.allSettled([
+    fetchRequiredConsents(nextSession.token),
+    fetchTrainingConsent(nextSession.token),
+  ])
+  onboardingComplete.value = requiredResult.status === 'fulfilled' && requiredResult.value?.complete === true
+  allowModelTraining.value = trainingResult.status === 'fulfilled' && trainingResult.value?.granted === true
+  window.scrollTo({ top: 0 })
+}
+async function enterDashboard() {
+  if (authLoading.value) return
+  authLoading.value = true
+  authError.value = ''
+  try {
+    await applySession(await loginWithPassword(loginForm.value.email.trim(), loginForm.value.password))
+  } catch (error) {
+    authError.value = friendlyAuthError(error)
+  } finally {
+    authLoading.value = false
+  }
+}
+async function handleGoogleCredential(response) {
+  authLoading.value = true
+  authError.value = ''
+  try {
+    await applySession(await loginWithGoogle(response.credential))
+  } catch (error) {
+    authError.value = friendlyAuthError(error)
+  } finally {
+    authLoading.value = false
+  }
+}
+async function setupGoogleButton() {
+  if (activeView.value !== 'login') return
+  await nextTick()
+  if (!googleButton.value) return
+  googleButton.value.innerHTML = ''
+  if (!googleClientId) return
+  try {
+    const google = await loadGoogleIdentity()
+    if (!googleIdentityInitialized) {
+      google.accounts.id.initialize({ client_id: googleClientId, callback: handleGoogleCredential, auto_select: false })
+      googleIdentityInitialized = true
+    }
+    google.accounts.id.renderButton(googleButton.value, { theme: 'outline', size: 'large', shape: 'pill', width: Math.min(350, googleButton.value.clientWidth || 350), text: 'continue_with' })
+  } catch (error) {
+    authError.value = 'Google sign-in is temporarily unavailable. Please continue with email or try again.'
+  }
+}
+function friendlyAuthError(error) {
+  const message = String(error?.message || '')
+  if (/credential|email|password|unauthenticated|401/i.test(message)) return 'We could not sign you in with those details. Check them and try again.'
+  if (/network|fetch|load|connect/i.test(message)) return 'Skino could not reach the server. Check your connection and try again.'
+  return 'Sign-in could not be completed. Please try again in a moment.'
+}
+async function nextOnboardingStep() {
+  if (!isLastOnboardingStep.value) { onboardingStep.value += 1; return }
+  if (!canFinishOnboarding.value) return
+  authLoading.value = true
+  onboardingError.value = ''
+  try {
+    await Promise.all([
+      updateRequiredConsents(session.value.token, { terms: true, scan_processing: true }),
+      updateTrainingConsent(session.value.token, allowModelTraining.value),
+    ])
+    onboardingComplete.value = true
+    localStorage.removeItem(onboardingKey())
+    window.scrollTo({ top: 0 })
+  } catch {
+    onboardingError.value = 'We could not save your privacy choices. Check your connection and try again—nothing has been submitted yet.'
+  } finally {
+    authLoading.value = false
+  }
+}
+function previousOnboardingStep() { if (onboardingStep.value > 0) onboardingStep.value -= 1 }
+function updateSessionProfile(user) {
+  session.value = { ...session.value, user }
+  saveSession(session.value)
+}
+function updateTrainingChoice(granted) { allowModelTraining.value = granted }
+async function signOut() {
+  const token = session.value?.token
+  if (token) logout(token).catch(() => {})
+  clearSession()
+  session.value = null
+  isLoggedIn.value = false; onboardingComplete.value = false; activeView.value = 'home'; acceptedTerms.value = false
+  acceptedScanConsent.value = false; allowModelTraining.value = false; window.scrollTo({ top: 0 })
+}
+function syncPublicMotion() {
+  const scrollTop = window.scrollY
+  showStickyActions.value = scrollTop > 480
+  isHeaderCompact.value = scrollTop > 36
+
+  const sections = ['home', 'how', 'services', 'about', 'contact']
+    .map((id) => document.getElementById(id))
+    .filter(Boolean)
+  const marker = window.innerHeight * 0.38
+  currentPublicSection.value = sections.reduce((current, section) => (
+    section.getBoundingClientRect().top <= marker ? section.id : current
+  ), 'home')
+
+  const journey = document.querySelector('.how-journey')
+  if (journey) {
+    const rect = journey.getBoundingClientRect()
+    journeyProgress.value = Math.min(1, Math.max(0, (window.innerHeight * 0.76 - rect.top) / Math.max(rect.height * 0.78, 1)))
+  }
 }
 
-function signOut() {
-  isLoggedIn.value = false
-  activeView.value = 'home'
+async function setupPublicMotion() {
+  await nextTick()
+  revealObserver?.disconnect()
+  const targets = document.querySelectorAll('.reveal-on-scroll')
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  motionReady.value = true
+  if (reduceMotion || !('IntersectionObserver' in window)) {
+    targets.forEach((target) => target.classList.add('is-visible'))
+  } else {
+    revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return
+        entry.target.classList.add('is-visible')
+        revealObserver?.unobserve(entry.target)
+      })
+    }, { threshold: 0.13, rootMargin: '0px 0px -7% 0px' })
+    targets.forEach((target) => revealObserver.observe(target))
+  }
+  syncPublicMotion()
 }
 
-function setLanguage(nextLanguage) {
-  language.value = nextLanguage
-}
-
-function syncStickyActions() {
-  showStickyActions.value = window.scrollY > 360
-}
-
-onMounted(() => {
-  syncStickyActions()
-  window.addEventListener('scroll', syncStickyActions, { passive: true })
+watch(activeView, (view) => {
+  if (view === 'login') setupGoogleButton()
+  else if (!isLoggedIn.value) setupPublicMotion()
 })
-
+onMounted(async () => {
+  window.addEventListener('scroll', syncPublicMotion, { passive: true })
+  startHeroSlider()
+  setupPublicMotion()
+  const savedSession = readSession()
+  if (!savedSession?.token) return
+  try {
+    const user = await fetchMe(savedSession.token)
+    await applySession({ ...savedSession, user })
+  } catch {
+    clearSession()
+  }
+})
 onUnmounted(() => {
-  window.removeEventListener('scroll', syncStickyActions)
+  window.removeEventListener('scroll', syncPublicMotion)
+  window.clearInterval(heroSliderTimer)
+  revealObserver?.disconnect()
 })
-
 </script>
 
 <template>
-  <div class="app-shell">
-    <header class="site-header">
-      <button class="brand-button" type="button" @click="openView(isLoggedIn ? 'dashboard' : 'home')">
-        <span class="brand-mark">
-          <img :src="logo" alt="" />
-        </span>
-        <span>
-          <strong>{{ currentTitle }}</strong>
-          <small>{{ t.brandNote }}</small>
-        </span>
-      </button>
+  <div class="app-shell" :class="{ 'motion-ready': motionReady }">
+    <template v-if="!isLoggedIn">
+      <header class="site-header" :class="{ 'is-scrolled': isHeaderCompact }">
+        <button class="brand-button" type="button" aria-label="Skino home" @click="scrollTo('home')"><img :src="logo" alt="" /><span>Skino<small>Skin intelligence</small></span></button>
+        <button class="menu-button" type="button" :aria-expanded="mobileMenuOpen" aria-label="Toggle navigation" @click="mobileMenuOpen = !mobileMenuOpen"><span></span><span></span></button>
+        <nav :class="['nav-links', { open: mobileMenuOpen }]" aria-label="Primary navigation">
+          <button v-for="item in navItems" :key="item.target" type="button" :class="{ active: currentPublicSection === item.target && activeView !== 'login' }" @click="scrollTo(item.target)">{{ item.label }}</button>
+          <div class="mobile-language-nav"><button type="button" :class="{ active: language === 'en' }" @click="language = 'en'">English</button><button type="button" :class="{ active: language === 'my' }" @click="language = 'my'">မြန်မာ</button></div>
+          <button class="mobile-login-nav" type="button" @click="openLogin">{{ t.login }} <span>→</span></button>
+        </nav>
+        <div class="header-actions"><div class="language-toggle" aria-label="Language"><button type="button" :class="{ active: language === 'en' }" @click="language = 'en'">EN</button><button type="button" :class="{ active: language === 'my' }" @click="language = 'my'">မြန်မာ</button></div><button class="signin-button" type="button" :class="{ 'is-current': activeView === 'login' }" @click="openLogin"><span class="signin-dot"></span>{{ t.login }} <i>→</i></button></div>
+      </header>
 
-      <nav class="nav-links" aria-label="Primary navigation">
-        <button
-          v-for="item in publicNavItems"
-          :key="item.view"
-          type="button"
-          :class="{ active: activeView === item.view, 'login-nav-item': item.view === 'login' }"
-          @click="openView(item.view)"
-        >
-          {{ item.label }}
-        </button>
-      </nav>
-
-      <div class="header-actions">
-        <div class="language-toggle" aria-label="Language">
-          <button type="button" :class="{ active: language === 'en' }" @click="setLanguage('en')">EN</button>
-          <button type="button" :class="{ active: language === 'my' }" @click="setLanguage('my')">MM</button>
-        </div>
-        <button v-if="isLoggedIn" class="ghost-button" type="button" @click="signOut">{{ t.logout }}</button>
-      </div>
-    </header>
-
-    <main>
-      <template v-if="!isLoggedIn && activeView !== 'login'">
-        <section id="home" class="landing-hero">
-          <div class="home-copy">
-            <p class="eyebrow">{{ t.eyebrow }}</p>
-            <h1>
-              <span v-for="(line, index) in t.heroTitle" :key="line" :class="{ 'orange-line': index === 2 }">
-                {{ line }}
-              </span>
-            </h1>
-            <div class="hero-actions">
-              <button class="primary-button" type="button" @click="openView('login')">{{ t.startScan }}</button>
-              <button class="ghost-button" type="button" @click="openView('services')">{{ t.exploreServices }}</button>
+      <main v-if="!['login', 'terms', 'privacy'].includes(activeView)" class="public-main">
+        <section id="home" class="hero-section">
+          <div class="hero-copy"><p class="eyebrow">{{ t.eyebrow }}</p><h1><span>{{ t.heroTitle[0] }}</span><span>{{ t.heroTitle[1] }}</span></h1><p class="hero-body">{{ t.heroBody }}</p><div class="hero-actions"><button class="primary-button" type="button" @click="openLogin">{{ t.startScan }} <span>→</span></button><button class="text-button" type="button" @click="scrollTo('how')">{{ t.exploreServices }}</button></div><div class="trust-row"><span>Private by default</span><span>Guidance, not diagnosis</span><span>Mobile ready</span></div></div>
+          <div class="hero-slider" aria-roledescription="carousel" aria-label="Skino care highlights" @mouseenter="stopHeroSlider" @mouseleave="startHeroSlider" @touchstart.passive="handleHeroTouchStart" @touchend="handleHeroTouchEnd">
+            <div class="hero-slider-track">
+              <article v-for="(slide, index) in heroSlides" :key="slide.title" class="hero-slide" :class="{ active: index === currentHeroSlide }" :aria-hidden="index !== currentHeroSlide">
+                <img :src="slide.image" :alt="slide.title" />
+                <div class="hero-slide-shade"></div>
+                <div class="hero-slide-copy"><span>{{ slide.eyebrow }}</span><h2>{{ slide.title }}</h2><p>{{ slide.text }}</p></div>
+              </article>
             </div>
-            <p>{{ t.heroBody }}</p>
-            <div class="hero-stat-strip" aria-label="Skino platform highlights">
-              <span v-for="chip in t.heroChips" :key="chip">{{ chip }}</span>
-            </div>
-          </div>
-
-          <div class="hero-actions-panel" aria-label="Skino quick actions">
-            <div class="quick-panel-header">
-              <span>01</span>
-              <div>
-                <p class="eyebrow">{{ t.howItWorks }}</p>
-                <h2>{{ t.quickTitle }}</h2>
-              </div>
-            </div>
-            <p>{{ t.quickText }}</p>
-            <div class="quick-card-stack">
-              <button
-                v-for="(action, index) in quickActions"
-                :key="action.title"
-                class="quick-card"
-                type="button"
-                @click="index === 0 ? openView('login') : openView('services')"
-              >
-                <img :src="action.icon" alt="" />
-                <span>
-                  <strong>{{ action.title }}</strong>
-                  <small>{{ action.text }}</small>
-                </span>
-              </button>
-            </div>
+            <button class="slider-arrow slider-arrow-left" type="button" aria-label="Previous slide" @click="goToHeroSlide(currentHeroSlide - 1)">‹</button>
+            <button class="slider-arrow slider-arrow-right" type="button" aria-label="Next slide" @click="goToHeroSlide(currentHeroSlide + 1)">›</button>
+            <div class="slider-dots" aria-label="Choose slide"><button v-for="(_, index) in heroSlides" :key="index" type="button" :class="{ active: index === currentHeroSlide }" :aria-label="`Show slide ${index + 1}`" @click="goToHeroSlide(index)"></button></div>
           </div>
         </section>
 
-        <section class="landing-section how-section" aria-labelledby="how-title">
-          <div class="section-heading">
-            <p class="eyebrow">{{ t.howItWorks }}</p>
-            <h2 id="how-title">{{ t.howTitle }}</h2>
-          </div>
-          <div class="step-grid">
-            <article v-for="(step, index) in howSteps" :key="step.title" class="step-card">
-              <span class="step-number">{{ index + 1 }}</span>
-              <img :src="step.icon" alt="" />
-              <h3>{{ step.title }}</h3>
-              <p>{{ step.text }}</p>
-            </article>
+        <section id="how" class="content-section how-section reveal-on-scroll">
+          <div class="section-heading split-heading"><div><p class="eyebrow">01 / How it works</p><h2>{{ t.howTitle }}</h2></div><p>{{ t.howText }}</p></div>
+          <div class="how-journey" :style="{ '--journey-progress': journeyProgress }">
+            <div class="journey-path" aria-hidden="true"><span></span></div>
+            <article v-for="(step, index) in steps" :key="step.number" class="journey-step" :class="`journey-step-${index + 1}`"><div class="journey-icon"><img :src="step.icon" alt="" /><span>{{ step.number }}</span></div><div><small>{{ index === 0 ? 'CAPTURE' : index === 1 ? 'UNDERSTAND' : 'BUILD A HABIT' }}</small><h3>{{ step.title }}</h3><p>{{ step.text }}</p></div></article>
+            <div class="journey-finish"><img :src="careMascot" alt="" /><span>{{ language === 'en' ? 'A clear next step, every day.' : 'နေ့တိုင်း ရှင်းလင်းသော နောက်တစ်ဆင့်။' }}</span></div>
           </div>
         </section>
 
-        <section id="services" class="landing-section" aria-labelledby="services-title">
-          <div class="section-heading section-heading-row">
-            <div>
-              <p class="eyebrow">{{ t.services }}</p>
-              <h2 id="services-title">{{ t.servicesTitle }}</h2>
-            </div>
-            <button class="ghost-button" type="button" @click="openView('login')">{{ t.previewDashboard }}</button>
-          </div>
-          <div class="service-grid">
-            <article
-              v-for="module in modules.slice(0, 4)"
-              :key="module.title"
-              class="service-card"
-              :style="{ '--module-tone': module.tone }"
-            >
-              <img :src="module.icon" alt="" />
-              <span>{{ module.status }}</span>
-              <h3>{{ module.title }}</h3>
-              <p>{{ module.subtitle }}</p>
-            </article>
-          </div>
+        <section id="services" class="content-section services-section reveal-on-scroll">
+          <div class="section-heading split-heading"><div><p class="eyebrow">02 / Skino services</p><h2>{{ t.serviceTitle }}</h2></div><p>{{ t.serviceText }}</p></div>
+          <div class="service-grid"><article v-for="(module, index) in modules" :key="module.title" class="service-card" :class="{ featured: index === 0 }" :style="{ '--tone': module.tone }"><div class="service-card-top"><span class="service-icon"><img :src="module.icon" alt="" /></span><span class="service-status">{{ module.status }}</span></div><div class="service-copy"><small>{{ module.feature }}</small><h3>{{ module.title }}</h3><p>{{ module.subtitle }}</p></div><button type="button" @click="openLogin">{{ language === 'en' ? 'Open this service' : 'ဝန်ဆောင်မှု ဖွင့်မယ်' }} <span>↗</span></button></article></div>
+          <div class="service-promise"><div><span>✓</span><p><strong>{{ language === 'en' ? 'One connected journey' : 'ချိတ်ဆက်ထားသော ခရီးစဉ်တစ်ခု' }}</strong><small>{{ language === 'en' ? 'Your result moves with you from scan to routine and history.' : 'သင့်ရလဒ်သည် စကင်မှ နေ့စဉ်အစီအစဉ်နှင့် မှတ်တမ်းအထိ အတူလိုက်ပါသည်။' }}</small></p></div><div><span>✓</span><p><strong>{{ language === 'en' ? 'Private by design' : 'ကိုယ်ရေးလုံခြုံမှု ဦးစားပေး' }}</strong><small>{{ language === 'en' ? 'Consent is clear, and AI improvement remains your choice.' : 'သဘောတူညီချက်ကို ရှင်းပြပြီး AI တိုးတက်မှုတွင် ပါဝင်ခြင်းကို သင်ရွေးချယ်နိုင်သည်။' }}</small></p></div></div>
         </section>
 
-        <section class="landing-section product-story" aria-labelledby="story-title">
-          <div class="section-heading">
-            <p class="eyebrow">Skin AI / 004</p>
-            <h2 id="story-title">{{ t.storyTitle }}</h2>
-          </div>
+        <section class="trust-demo-section reveal-on-scroll" aria-labelledby="trust-demo-title"><div><p class="eyebrow">Trust / Demo transparency</p><h2 id="trust-demo-title">Clear guidance, clear limits.</h2><p>Camera alignment runs inside your browser. Your photo is sent only when you choose Analyze. Model-learning is optional, and Skino provides wellness guidance—not a medical diagnosis.</p></div><div class="trust-demo-points"><span><b>Browser guidance</b><small>Face position and capture quality are checked before upload.</small></span><span><b>Your choice</b><small>AI-improvement consent can be changed from your profile.</small></span><span><b>Safety first</b><small>Urgent, painful, or rapidly changing concerns need professional care.</small></span></div></section>
 
-          <div class="story-grid">
-            <article class="score-panel">
-              <p class="eyebrow">Analysis preview</p>
-              <strong>82</strong>
-              <span>{{ t.score }}</span>
-              <small>Demo result from the customer dashboard flow</small>
-            </article>
-
-            <article class="bars-panel">
-              <div v-for="bar in analysisBars" :key="bar.label" class="bar-row" :style="{ '--bar-tone': bar.tone }">
-                <div>
-                  <span>{{ bar.label }}</span>
-                  <strong>{{ bar.value }}%</strong>
-                </div>
-                <i><b :style="{ width: `${bar.value}%` }"></b></i>
-              </div>
-            </article>
-
-            <article class="noticed-panel">
-              <img :src="reportIcon" alt="" />
-              <h3>{{ t.noticedTitle }}</h3>
-              <p>{{ t.noticedText }}</p>
-            </article>
-          </div>
+        <section id="pricing" class="content-section reveal-on-scroll">
+          <div class="section-heading split-heading"><div><p class="eyebrow">03 / Fair and flexible</p><h2>Choose care that fits your pace.</h2></div><p>Start free, add a scan only when you need one, or choose ongoing tracking. Final checkout details will always be shown before payment.</p></div>
+          <PricingPlans @choose="choosePublicPlan" />
+          <div class="mt-4 flex flex-col items-start justify-between gap-3 rounded-2xl border border-skino-line bg-white px-5 py-4 sm:flex-row sm:items-center"><p class="mb-0 text-xs leading-5 text-skino-muted"><strong class="text-skino-ink">Our goal:</strong> make useful skin guidance accessible while keeping your choices clear.</p><span class="rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] text-skino-green">No hidden plan changes</span></div>
         </section>
 
-        <section class="landing-section routine-band" aria-labelledby="routine-title">
-          <div>
-            <p class="eyebrow">Routine / Daily care</p>
-            <h2 id="routine-title">{{ t.routineTitle }}</h2>
-            <p>{{ t.routineText }}</p>
-          </div>
+        <section id="about" class="content-section about-section reveal-on-scroll"><div class="about-visual"><img :src="waveMascot" alt="Skino waving" /><span>Guidance<br />with care</span></div><div><p class="eyebrow">04 / About Skino</p><h2>{{ t.aboutTitle }}</h2><p>{{ t.aboutText }}</p><div class="about-values"><span>Consent first</span><span>Easy to understand</span><span>Professional handoff</span></div></div></section>
+        <section id="contact" class="cta-section reveal-on-scroll"><img class="cta-care-mascot" :src="careMascot" alt="Skino care buddy" /><div><p class="eyebrow">Contact us / Start with consent</p><h2>{{ t.ctaTitle }}</h2><p>{{ t.ctaText }} Need help? Team Kairo is ready to guide you.</p></div><button class="primary-button" type="button" @click="openLogin">{{ t.startScan }} <span>→</span></button></section>
+      </main>
 
-          <div class="routine-timeline">
-            <span v-for="(step, index) in routineSteps" :key="step">
-              <i>{{ String(index + 1).padStart(2, '0') }}</i>
-              <strong>{{ step }}</strong>
-            </span>
-          </div>
-        </section>
+      <main v-else-if="activeView === 'terms' || activeView === 'privacy'" class="public-main legal-page"><button class="back-link" type="button" @click="scrollTo('home')">← Back to Skino</button><article v-if="activeView === 'terms'"><p class="eyebrow">Effective August 20, 2026</p><h1>Skino Terms of Service</h1><p>Skino is a wellness and skincare guidance demo. It does not diagnose, treat, or replace advice from a qualified medical professional.</p><h2>Using Skino</h2><p>You must provide accurate account information and use face-scan features only for yourself or with the photographed person’s permission. Do not use Skino for emergencies.</p><h2>Your results</h2><p>Results depend on image quality, lighting, camera hardware, and the current AI model. They may be incomplete or incorrect. Retake low-quality scans and seek professional help for painful, severe, or rapidly changing concerns.</p><h2>Demo pricing</h2><p>Pricing plans shown in this version are previews. No payment or subscription is created by selecting a plan.</p><h2>Your control</h2><p>You can review or delete saved scans, change optional model-learning consent, and stop an active routine from your workspace.</p></article><article v-else><p class="eyebrow">Effective August 20, 2026</p><h1>Skino Privacy Policy</h1><p>Skino processes account information, optional profile details, face photographs, scan results, and routine activity to provide the features you request.</p><h2>Face-scan processing</h2><p>Camera alignment guidance runs in your browser. When you choose Analyze, the selected photograph and capture-quality metadata are sent to the Skino service for analysis and, when signed in, history storage.</p><h2>Optional AI improvement</h2><p>Your scan is not placed in the model-improvement review queue unless you explicitly enable that choice. You can turn it off later. Submitted samples still require human review before any training use.</p><h2>Storage and deletion</h2><p>Signed-in scans remain connected to your account until you delete them or the service applies its retention policy. Deleting a scan is permanent and may require stopping a routine that uses it.</p><h2>Contact</h2><p>For this hackathon demo, contact Team Kairo through the project team to request account or data review.</p></article></main>
 
-        <section class="landing-section memory-section" aria-labelledby="memory-title">
-          <div class="section-heading section-heading-row">
-            <div>
-              <p class="eyebrow">Progress / Skin memory</p>
-              <h2 id="memory-title">{{ t.memoryTitle }}</h2>
-            </div>
-            <img class="section-mascot" :src="progressIcon" alt="" />
+      <main v-else class="grid min-h-[calc(100vh-88px)] place-items-center bg-[radial-gradient(circle_at_top,rgba(243,106,22,.13),transparent_34%)] bg-skino-cream px-4 py-7 text-skino-ink sm:py-10">
+        <form class="grid w-full max-w-[410px] gap-4 rounded-[26px] border border-skino-line bg-white p-6 shadow-skino sm:p-8" @submit.prevent="enterDashboard">
+          <div class="grid place-items-center text-center">
+            <img class="size-14 rounded-2xl border border-skino-line-orange object-cover shadow-skino-sm" :src="logo" alt="" />
+            <p class="mb-0 mt-3 text-[10px] font-medium uppercase tracking-[.14em] text-skino-orange-dark">Private skin workspace</p>
+            <h1 class="mt-2 text-3xl font-medium leading-none tracking-[-.045em]">{{ t.loginTitle }}</h1>
+            <p class="mb-0 mt-2 max-w-xs text-xs leading-5 text-skino-muted">{{ t.loginText }}</p>
           </div>
-
-          <div class="memory-grid">
-            <article v-for="stat in memoryStats" :key="stat.label" class="memory-card">
-              <strong>{{ stat.value }}</strong>
-              <span>{{ stat.label }}</span>
-            </article>
-          </div>
-        </section>
-
-        <section class="landing-section safety-section" aria-labelledby="safety-title">
-          <div class="section-heading">
-            <p class="eyebrow">Safety / Responsible AI</p>
-            <h2 id="safety-title">{{ t.safetyTitle }}</h2>
-          </div>
-
-          <div class="safety-grid">
-            <article v-for="card in safetyCards" :key="card.title" class="safety-card">
-              <span>{{ card.number }}</span>
-              <h3>{{ card.title }}</h3>
-              <p>{{ card.text }}</p>
-            </article>
-          </div>
-        </section>
-
-        <section id="about" class="landing-section about-band" aria-labelledby="about-title">
-          <div>
-            <p class="eyebrow">About us</p>
-            <h2 id="about-title">{{ t.aboutTitle }}</h2>
-            <p>{{ t.aboutText }}</p>
-          </div>
-          <div class="team-grid" aria-label="Team Kairo members">
-            <article v-for="member in teamMembers" :key="member.name" class="team-card">
-              <span>{{ member.name.slice(0, 1) }}</span>
-              <strong>{{ member.name }}</strong>
-              <small>{{ member.role }}</small>
-            </article>
-          </div>
-        </section>
-      </template>
-
-      <section v-else-if="!isLoggedIn && activeView === 'login'" class="login-layout">
-        <div class="login-copy">
-          <p class="eyebrow">User access</p>
-          <h1>{{ t.loginTitle }}</h1>
-          <p>{{ t.loginText }}</p>
-          <div class="login-benefits">
-            <span v-for="benefit in t.loginBenefits" :key="benefit">{{ benefit }}</span>
-          </div>
-        </div>
-
-        <form class="login-card" @submit.prevent="enterDashboard">
-          <div class="form-heading">
-            <span class="brand-mark">
-              <img :src="logo" alt="" />
-            </span>
-            <div>
-              <h2>{{ t.login }}</h2>
-              <p>{{ t.loginSubtitle }}</p>
-            </div>
-          </div>
-          <label>
-            {{ t.email }}
-            <input type="email" value="demo@skino.local" autocomplete="email" />
-          </label>
-          <label>
-            {{ t.password }}
-            <input type="password" value="password" autocomplete="current-password" />
-          </label>
-          <button class="primary-button full-width" type="submit">{{ t.goDashboard }}</button>
+          <div v-if="googleClientId" ref="googleButton" class="grid min-h-11 place-items-center overflow-hidden"></div>
+          <div v-else class="grid gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-center"><p class="mb-0 text-[11px] leading-4 text-amber-900">Google sign-in is temporarily unavailable. Please continue securely with email.</p></div>
+          <div class="flex items-center gap-3 text-[9px] uppercase tracking-[.06em] text-skino-muted before:h-px before:flex-1 before:bg-skino-line after:h-px after:flex-1 after:bg-skino-line"><span>or continue with email</span></div>
+          <p v-if="authError" class="mb-0 rounded-xl border border-red-200 bg-red-50 p-3 text-[11px] leading-4 text-red-700">{{ authError }}</p>
+          <label class="grid gap-2 text-[11px] text-skino-muted">{{ t.email }}<input v-model="loginForm.email" class="h-11 w-full rounded-xl border border-skino-line bg-skino-paper px-3 text-sm text-skino-ink outline-none transition focus:border-skino-orange focus:bg-white focus:ring-4 focus:ring-orange-100" type="email" autocomplete="email" required /></label>
+          <label class="grid gap-2 text-[11px] text-skino-muted">{{ t.password }}<span class="relative block"><input v-model="loginForm.password" class="h-11 w-full rounded-xl border border-skino-line bg-skino-paper px-3 pr-16 text-sm text-skino-ink outline-none transition focus:border-skino-orange focus:bg-white focus:ring-4 focus:ring-orange-100" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" required /><button class="absolute right-2 top-1.5 min-h-8 rounded-lg px-2 text-[10px] text-skino-orange-dark hover:bg-skino-orange-soft" type="button" @click="showPassword = !showPassword">{{ showPassword ? 'Hide' : 'Show' }}</button></span></label>
+          <div class="flex items-center justify-between gap-3"><label class="flex items-center gap-2 text-[10px] text-skino-muted"><input v-model="loginForm.remember" class="size-4 accent-skino-orange" type="checkbox" />{{ t.remember }}</label><button class="text-[10px] text-skino-orange-dark hover:underline" type="button">{{ t.forgot }}</button></div>
+          <button class="min-h-11 w-full rounded-xl bg-skino-orange px-5 text-xs font-medium text-white shadow-skino-sm transition hover:-translate-y-0.5 hover:bg-skino-orange-dark disabled:cursor-not-allowed disabled:opacity-50" type="submit" :disabled="authLoading">{{ authLoading ? 'Connecting…' : t.loginButton }} <span>→</span></button>
+          <p class="mb-0 text-center text-[9px] text-skino-muted"><span class="text-skino-green">✓</span> Secure connection to your Skino account</p>
         </form>
-      </section>
+      </main>
 
-      <section v-else class="dashboard-layout">
-        <div class="dashboard-hero">
-          <div>
-            <p class="eyebrow">User dashboard</p>
-            <h1>{{ t.dashboardTitle }}</h1>
-            <p>{{ t.dashboardText }}</p>
-          </div>
-          <div class="health-card">
-            <span>{{ t.score }}</span>
-            <strong>82</strong>
-            <small>{{ t.demo }}</small>
-          </div>
-        </div>
+      <footer v-if="activeView !== 'login'" class="site-footer">
+        <div class="footer-main"><div class="footer-intro"><div class="footer-brand"><img :src="logo" alt="" /><span>Skino<small>Your AI Skin Care Buddy</small></span></div><p>Simple skin guidance from your first scan to the habits you can keep.</p><button type="button" @click="openLogin">Start your private scan <span>→</span></button></div><div class="footer-column"><strong>Explore</strong><button type="button" @click="scrollTo('home')">Home</button><button type="button" @click="scrollTo('how')">How it works</button><button type="button" @click="scrollTo('services')">Services</button><button type="button" @click="scrollTo('pricing')">Pricing</button></div><div class="footer-column"><strong>Skino</strong><button type="button" @click="scrollTo('about')">About us</button><button type="button" @click="scrollTo('contact')">Contact us</button><button type="button" @click="openLogin">Sign in</button></div><div class="footer-column"><strong>Safety</strong><span>Guidance, not diagnosis</span><span>Consent before scan</span><span>AI training is optional</span></div></div>
+        <div class="footer-bottom"><span>© 2026 Team Kairo. Built with care.</span><span class="flex gap-4"><button type="button" @click="openLegal('terms')">Terms</button><button type="button" @click="openLegal('privacy')">Privacy</button></span><span>Scan · Understand · Care</span></div>
+      </footer>
+      <div v-if="activeView !== 'login' && showStickyActions" class="sticky-actions"><button class="primary-button" type="button" @click="openLogin">{{ t.startScan }} <span>→</span></button></div>
+    </template>
 
-        <div class="dashboard-strip">
-          <span>{{ t.todayPlan }}</span>
-          <button class="primary-button" type="button">{{ t.startScan }}</button>
+    <main v-else-if="!onboardingComplete" class="min-h-screen bg-[radial-gradient(circle_at_15%_10%,rgba(14,92,86,.08),transparent_28%),radial-gradient(circle_at_88%_8%,rgba(243,106,22,.14),transparent_34%)] bg-skino-cream px-3 py-3 text-skino-ink sm:px-6 sm:py-5">
+      <header class="mx-auto flex min-h-14 max-w-5xl items-center justify-between"><div class="flex items-center gap-3"><img class="size-11 rounded-2xl border border-skino-line-orange object-cover shadow-skino-sm" :src="logo" alt="" /><div class="grid"><span class="text-sm font-medium">Skino</span><small class="text-[10px] text-skino-muted">Private skin workspace</small></div></div><div class="flex items-center gap-3"><span class="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] text-skino-green sm:flex"><i class="size-1.5 rounded-full bg-emerald-500"></i>Consent first</span><button class="text-[11px] text-skino-muted hover:text-skino-orange-dark" type="button" @click="signOut">{{ t.logout }}</button></div></header>
+      <section class="mx-auto mt-2 max-w-5xl overflow-hidden rounded-[28px] border border-skino-line bg-white/95 shadow-skino">
+        <div class="grid gap-5 p-5 sm:p-8 lg:grid-cols-[1fr_360px] lg:items-center lg:gap-12 lg:p-10">
+          <div class="max-w-2xl"><div class="mb-5 flex items-center gap-2"><span v-for="(page, index) in onboardingPages" :key="page.title" class="flex items-center gap-2 text-[9px]" :class="index <= onboardingStep ? 'text-skino-orange-dark' : 'text-skino-muted'"><i class="grid size-6 place-items-center rounded-full not-italic" :class="index < onboardingStep ? 'bg-skino-green text-white' : index === onboardingStep ? 'bg-skino-orange text-white' : 'bg-skino-paper'">{{ index < onboardingStep ? '✓' : index + 1 }}</i><span class="hidden sm:inline">{{ index === 0 ? 'Welcome' : index === 1 ? 'Safe scan' : 'Your consent' }}</span></span></div><p class="mb-3 text-[10px] font-medium uppercase tracking-[.14em] text-skino-orange-dark">{{ currentOnboarding.kicker }}</p><h1 class="max-w-xl text-3xl font-medium leading-[1.02] tracking-[-.045em] sm:text-4xl lg:text-5xl">{{ currentOnboarding.title }}</h1><p class="mb-0 mt-4 max-w-xl text-xs leading-6 text-skino-muted sm:text-sm">{{ currentOnboarding.body }}</p><div v-if="isLastOnboardingStep" class="mt-5 grid gap-2 rounded-2xl bg-skino-paper p-4 text-[11px] leading-5 text-skino-muted sm:grid-cols-3"><span><b class="mb-1 block text-skino-ink">What we use</b>Face photo, scan result, and care activity.</span><span><b class="mb-1 block text-skino-ink">Why we use it</b>Analysis, result display, and personal guidance.</span><span><b class="mb-1 block text-skino-ink">Your control</b>AI improvement stays optional and changeable.</span></div><p v-if="onboardingError" class="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-[11px] leading-5 text-red-700" role="alert">{{ onboardingError }}</p></div>
+          <div class="relative grid min-h-52 place-items-center overflow-hidden rounded-[24px] border border-skino-line-orange bg-[linear-gradient(145deg,#fff8ef,#ffe8d5)] sm:min-h-60 lg:min-h-72"><span class="absolute left-4 top-4 rounded-full bg-white/80 px-3 py-1 text-[9px] text-skino-orange-dark">Step {{ onboardingStep + 1 }} of {{ onboardingPages.length }}</span><span class="absolute -right-12 -top-12 size-36 rounded-full bg-white/55"></span><img class="relative max-h-44 w-2/3 object-contain drop-shadow-xl sm:max-h-52" :src="currentOnboarding.image" alt="" /></div>
         </div>
-
-        <div class="module-grid">
-          <button
-            v-for="module in modules"
-            :key="module.title"
-            class="module-card"
-            type="button"
-            :style="{ '--module-tone': module.tone }"
-          >
-            <span class="module-status">{{ module.status }}</span>
-            <span class="module-icon">
-              <img :src="module.icon" alt="" />
-            </span>
-            <span class="module-title">{{ module.title }}</span>
-            <span class="module-subtitle">{{ module.subtitle }}</span>
-          </button>
+        <div v-if="isLastOnboardingStep" class="grid gap-2 border-t border-skino-line bg-[#fffcf8] p-5 sm:p-8 lg:grid-cols-3">
+          <label v-for="consent in onboardingConsents" :key="consent.key" class="grid cursor-pointer grid-cols-[48px_1fr_20px] items-start gap-3 rounded-2xl border p-3.5 transition hover:-translate-y-0.5" :class="[(consent.key === 'terms' ? acceptedTerms : consent.key === 'scan' ? acceptedScanConsent : allowModelTraining) ? 'border-emerald-200 bg-emerald-50' : 'border-skino-line bg-white']"><span class="grid size-12 place-items-center rounded-xl bg-skino-paper"><img class="size-10 object-contain" :src="consent.icon" alt="" /></span><span class="grid gap-1"><small class="text-[8px] uppercase tracking-[.1em] text-skino-orange-dark">{{ consent.badge }}</small><strong class="text-[11px] font-medium leading-4">{{ consent.title }}</strong><small class="text-[9px] leading-4 text-skino-muted">{{ consent.text }}</small><span v-if="consent.key === 'terms'" class="flex gap-3 text-[10px]"><a class="text-skino-orange-dark underline" href="/terms.html" target="_blank" rel="noopener" @click.stop>Read Terms</a><a class="text-skino-orange-dark underline" href="/privacy.html" target="_blank" rel="noopener" @click.stop>Read Privacy Policy</a></span></span><input v-if="consent.key === 'terms'" v-model="acceptedTerms" class="mt-1 size-4 accent-skino-green" type="checkbox" /><input v-else-if="consent.key === 'scan'" v-model="acceptedScanConsent" class="mt-1 size-4 accent-skino-green" type="checkbox" /><input v-else v-model="allowModelTraining" class="mt-1 size-4 accent-skino-green" type="checkbox" /></label>
         </div>
+        <footer class="flex flex-col gap-4 border-t border-skino-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8"><p class="mb-0 max-w-lg text-[9px] leading-4 text-skino-muted">Required choices must be accepted before scanning. Optional model improvement can be changed later in your profile.</p><div class="grid gap-2 sm:flex"><button v-if="onboardingStep > 0" class="min-h-11 rounded-xl border border-skino-line bg-white px-5 text-xs hover:border-skino-orange" type="button" @click="previousOnboardingStep">Back</button><button class="min-h-11 rounded-xl bg-skino-orange px-6 text-xs font-medium text-white shadow-skino-sm hover:bg-skino-orange-dark disabled:cursor-not-allowed disabled:opacity-40" type="button" :disabled="authLoading || (isLastOnboardingStep && !canFinishOnboarding)" @click="nextOnboardingStep">{{ authLoading ? 'Saving your choices…' : (isLastOnboardingStep ? 'Accept required choices and continue' : 'Continue') }} <span>→</span></button></div></footer>
       </section>
     </main>
 
-    <footer v-if="!isLoggedIn && activeView !== 'login'" id="contact" class="site-footer">
-      <div>
-        <span class="brand-mark footer-mark">
-          <img :src="logo" alt="" />
-        </span>
-        <p class="eyebrow">Contact / Team Kairo</p>
-        <h2>{{ t.footerTitle }}</h2>
-      </div>
-      <div class="footer-contact">
-        <strong>Skino — Your AI Skin Care Buddy</strong>
-        <p>{{ t.footerText }}</p>
-        <button class="primary-button" type="button" @click="openView('login')">{{ t.openLogin }}</button>
-      </div>
-    </footer>
-
-    <div v-if="!isLoggedIn && activeView !== 'login' && showStickyActions" class="sticky-action-bar" aria-label="Quick actions">
-      <button class="primary-button" type="button" @click="openView('login')">{{ t.startScan }}</button>
-      <button class="ghost-button" type="button" @click="openView('services')">{{ t.howItWorks }}</button>
-    </div>
+    <UserWorkspace v-else :session="session" :allow-model-training="allowModelTraining" @logout="signOut" @profile-updated="updateSessionProfile" @training-consent-updated="updateTrainingChoice" />
   </div>
 </template>

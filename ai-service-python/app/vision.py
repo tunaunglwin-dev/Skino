@@ -5,6 +5,7 @@ from statistics import mean
 from PIL import Image, ImageFilter, ImageOps, UnidentifiedImageError
 
 from app.calibration import HeuristicCalibration
+from app.landmark_zones import landmark_zone_images
 from app.schemas import AnalysisResponse, Concern, ScanQuality, SkinZone, TreatmentPackage
 from app.trained_model import TrainedSkinModel
 from app.treatment_packages import DEFAULT_TREATMENT_PACKAGES
@@ -36,9 +37,9 @@ class SkinVisionAnalyzer:
         self.calibration = calibration or HeuristicCalibration()
         self.trained_model = trained_model
 
-    def analyze(self, image_bytes: bytes) -> AnalysisResponse:
+    def analyze(self, image_bytes: bytes, face_landmarks: list[dict[str, float]] | None = None) -> AnalysisResponse:
         metrics = self.extract_metrics(image_bytes)
-        skin_zones = self.extract_skin_zones(image_bytes)
+        skin_zones = self.extract_skin_zones(image_bytes, face_landmarks)
         scan_quality = self._scan_quality(metrics)
         if self.trained_model:
             trained_result = self.trained_model.predict(metrics)
@@ -164,10 +165,14 @@ class SkinVisionAnalyzer:
             lighting_evenness,
         )
 
-    def extract_skin_zones(self, image_bytes: bytes) -> list[SkinZone]:
+    def extract_skin_zones(self, image_bytes: bytes, face_landmarks: list[dict[str, float]] | None = None) -> list[SkinZone]:
         image = self._decode_image(image_bytes)
         image = self._resize_for_analysis(image)
         width, height = image.size
+
+        landmark_crops = landmark_zone_images(image, face_landmarks)
+        if landmark_crops:
+            return [self._zone_from_crop(key, label, crop) for key, label, crop in landmark_crops]
 
         zone_boxes = [
             ("forehead", "Forehead", (0.28, 0.12, 0.72, 0.33)),
@@ -188,17 +193,20 @@ class SkinVisionAnalyzer:
                     int(height * bottom),
                 )
             )
-            pixels, coverage, face_centering, lighting_evenness = self._skin_pixels(crop)
-            metrics = self._extract_metrics(
-                crop,
-                pixels,
-                coverage,
-                face_centering,
-                lighting_evenness,
-            )
-            zones.append(self._skin_zone(key, label, metrics))
+            zones.append(self._zone_from_crop(key, label, crop))
 
         return zones
+
+    def _zone_from_crop(self, key: str, label: str, crop: Image.Image) -> SkinZone:
+        pixels, coverage, face_centering, lighting_evenness = self._skin_pixels(crop)
+        metrics = self._extract_metrics(
+            crop,
+            pixels,
+            coverage,
+            face_centering,
+            lighting_evenness,
+        )
+        return self._skin_zone(key, label, metrics)
 
     def predict(self, metrics: SkinMetrics) -> AnalysisResponse:
         skin_type, confidence = self._classify_skin_type(metrics)

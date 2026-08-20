@@ -19,6 +19,10 @@ class UserResource extends JsonResource
             'role' => $this->role,
             'google_id' => $this->google_id,
             'avatar_url' => $this->avatar_url,
+            'age_band' => $this->age_band,
+            'skin_tone_scale' => $this->skin_tone_scale,
+            'skin_goals' => $this->skin_goals ?? [],
+            'profile_completed_at' => $this->profile_completed_at?->toISOString(),
         ];
     }
 }

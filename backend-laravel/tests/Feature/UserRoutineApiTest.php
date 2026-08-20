@@ -50,16 +50,40 @@ class UserRoutineApiTest extends TestCase
 
         $this->putJson('/api/routine/today', [
             'morning_done' => true,
+            'morning_steps' => ['cleanser', 'serum', 'moisturizer', 'sunscreen'],
             'night_done' => false,
         ])
             ->assertOk()
             ->assertJsonPath('data.today.morning_done', true)
+            ->assertJsonPath('data.today.morning_steps.3', 'sunscreen')
             ->assertJsonPath('data.today.night_done', false);
+
+        $this->putJson('/api/routine/today', [
+            'night_done' => true,
+            'night_steps' => ['cleanser', 'serum', 'moisturizer'],
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.today.morning_done', true)
+            ->assertJsonPath('data.today.night_done', true)
+            ->assertJsonPath('data.today.night_steps.1', 'serum');
+
+        $this->putJson('/api/routine/today', [
+            'morning_done' => false,
+            'morning_steps' => ['cleanser'],
+            'night_done' => false,
+            'night_steps' => [],
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.today.morning_done', true)
+            ->assertJsonPath('data.today.morning_steps.3', 'sunscreen')
+            ->assertJsonPath('data.today.night_done', true)
+            ->assertJsonPath('data.today.night_steps.2', 'moisturizer');
 
         $this->assertDatabaseHas('routine_check_ins', [
             'morning_done' => true,
-            'night_done' => false,
+            'night_done' => true,
         ]);
+        $this->assertDatabaseCount('routine_check_ins', 1);
     }
 
     public function test_user_cannot_start_routine_from_another_users_scan(): void

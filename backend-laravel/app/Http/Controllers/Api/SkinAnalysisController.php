@@ -24,12 +24,14 @@ class SkinAnalysisController extends Controller
         $image = $request->file('image');
 
         try {
-            $result = $skinAnalyzer->analyze($image);
+            $result = $skinAnalyzer->analyze($image, $request->validated('face_landmarks'));
         } catch (RuntimeException) {
             return response()->json([
                 'message' => 'Skin analysis service is unavailable.',
             ], 502);
         }
+
+        $result['capture_context'] = $this->captureContext($request);
 
         return response()->json([
             'data' => [
@@ -71,12 +73,14 @@ class SkinAnalysisController extends Controller
         $image = $request->file('image');
 
         try {
-            $result = $skinAnalyzer->analyze($image);
+            $result = $skinAnalyzer->analyze($image, $request->validated('face_landmarks'));
         } catch (RuntimeException) {
             return response()->json([
                 'message' => 'Skin analysis service is unavailable.',
             ], 502);
         }
+
+        $result['capture_context'] = $this->captureContext($request);
 
         $imagePath = $image->store('skin-analyses/'.$request->user()->id);
         $analysis = SkinAnalysis::query()->create([
@@ -144,5 +148,18 @@ class SkinAnalysisController extends Controller
         $skinAnalysis->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * @return array<string, int|float|string>
+     */
+    private function captureContext(StoreSkinAnalysisRequest $request): array
+    {
+        return [
+            'mode' => (string) ($request->validated('capture_mode') ?? 'single_upload'),
+            'frame_count' => (int) ($request->validated('frame_count') ?? 1),
+            'client_quality_score' => round((float) ($request->validated('client_quality_score') ?? 0), 2),
+            'device_category' => (string) ($request->validated('device_category') ?? 'unknown'),
+        ];
     }
 }

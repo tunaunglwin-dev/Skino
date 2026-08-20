@@ -36,7 +36,9 @@ class UserRoutineResource extends JsonResource
                 'label' => $date->format('D'),
                 'is_today' => $date->isSameDay(today()),
                 'morning_done' => (bool) ($checkIn?->morning_done ?? false),
+                'morning_steps' => $checkIn?->morning_steps ?? [],
                 'night_done' => (bool) ($checkIn?->night_done ?? false),
+                'night_steps' => $checkIn?->night_steps ?? [],
                 'morning_completed_at' => $checkIn?->morning_completed_at?->toISOString(),
                 'night_completed_at' => $checkIn?->night_completed_at?->toISOString(),
             ];
@@ -51,7 +53,9 @@ class UserRoutineResource extends JsonResource
             'today' => [
                 'date' => today()->toDateString(),
                 'morning_done' => (bool) ($todayCheckIn?->morning_done ?? false),
+                'morning_steps' => $todayCheckIn?->morning_steps ?? [],
                 'night_done' => (bool) ($todayCheckIn?->night_done ?? false),
+                'night_steps' => $todayCheckIn?->night_steps ?? [],
                 'morning_completed_at' => $todayCheckIn?->morning_completed_at?->toISOString(),
                 'night_completed_at' => $todayCheckIn?->night_completed_at?->toISOString(),
             ],

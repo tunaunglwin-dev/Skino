@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\PrivacyConsentController;
 use App\Http\Controllers\Api\RoutineAssistantController;
 use App\Http\Controllers\Api\SkinAnalysisController;
+use App\Http\Controllers\Api\UserProfileController;
 use App\Http\Controllers\Api\UserRoutineController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -43,8 +44,12 @@ Route::post('/guest/appointment-requests', [AppointmentRequestController::class,
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/me', [AuthController::class, 'me']);
+    Route::get('/profile', [UserProfileController::class, 'show']);
+    Route::put('/profile', [UserProfileController::class, 'update']);
     Route::get('/privacy/model-training-consent', [PrivacyConsentController::class, 'show']);
     Route::put('/privacy/model-training-consent', [PrivacyConsentController::class, 'update']);
+    Route::get('/privacy/required-consents', [PrivacyConsentController::class, 'required']);
+    Route::put('/privacy/required-consents', [PrivacyConsentController::class, 'updateRequired']);
 
     Route::apiResource('skin-analyses', SkinAnalysisController::class)
         ->only(['index', 'store', 'show', 'destroy']);

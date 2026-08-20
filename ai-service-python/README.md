@@ -26,6 +26,24 @@ uvicorn app.main:app --host 127.0.0.1 --port 5000 --reload
 .\.venv\Scripts\python.exe -m unittest
 ```
 
+## Reproducible ML baseline
+
+The release-candidate workflow is deliberately separate from the runtime model. It audits the local data, rebuilds subject-grouped manifests, trains a MobileNetV3-Small baseline, and writes an evaluation report without changing production configuration.
+
+```powershell
+pip install -r requirements-ml.txt
+.\.venv\Scripts\python.exe tools\audit_and_build_manifests.py
+.\.venv\Scripts\python.exe tools\train_cnn_baseline.py `
+  --manifest-dir ..\datasets\ml_release_v1 `
+  --output-dir ..\models\cnn_acne_severity_v1 `
+  --epochs 8 `
+  --batch-size 32
+```
+
+The promotion decision is stored in `..\models\cnn_acne_severity_v1\evaluation_report.json`. A metric win alone does not promote the model: unresolved subject identity, demographic coverage, licensing, or expert-label review blockers keep the status at `hold`.
+
+The web scanner can also submit MediaPipe face landmarks. The service uses those landmarks to create adaptive forehead, cheek, nose, and chin polygon masks, with the older fixed boxes retained as a fallback.
+
 ## Endpoints
 
 - `GET /health`

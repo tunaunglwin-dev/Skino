@@ -1,4 +1,6 @@
 from io import BytesIO
+import json
+import math
 from unittest import TestCase
 
 from fastapi.testclient import TestClient
@@ -83,6 +85,36 @@ class AnalysisApiTest(TestCase):
         )
 
         self.assertEqual(response.status_code, 415)
+
+    def test_analyze_accepts_landmarks_for_adaptive_skin_zones(self) -> None:
+        landmarks = [
+            {
+                "x": 0.5 + (0.32 * math.cos(index * 0.37)),
+                "y": 0.5 + (0.40 * math.sin(index * 0.37)),
+                "z": 0,
+            }
+            for index in range(478)
+        ]
+        response = self.client.post(
+            "/analyze",
+            files={"image": ("face.png", self._sample_skin_image(), "image/png")},
+            data={"face_landmarks": json.dumps(landmarks)},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [zone["key"] for zone in response.json()["skin_zones"]],
+            ["forehead", "left_cheek", "right_cheek", "nose", "chin"],
+        )
+
+    def test_analyze_rejects_malformed_landmarks(self) -> None:
+        response = self.client.post(
+            "/analyze",
+            files={"image": ("face.png", self._sample_skin_image(), "image/png")},
+            data={"face_landmarks": "[]"},
+        )
+
+        self.assertEqual(response.status_code, 422)
 
     def _sample_skin_image(self) -> bytes:
         image = Image.new("RGB", (320, 320), (190, 132, 105))

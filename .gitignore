@@ -23,6 +23,7 @@ backend-laravel/storage/*.key
 __pycache__/
 *.py[cod]
 .venv/
+.pytest_cache/
 
 # Flutter
 mobile-flutter/.dart-home/
@@ -39,3 +40,10 @@ models/**
 
 # Local/generated working artifacts
 pptx_work/
+Skino-source-*.zip
+
+# Raw source artwork replaced by optimized production WebP assets
+web-app/src/assets/branding/routine-brightening-serum.png
+web-app/src/assets/branding/routine-gentle-cleanser.png
+web-app/src/assets/branding/routine-moisturizer.png
+web-app/src/assets/branding/routine-sunscreen.png

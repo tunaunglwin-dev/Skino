@@ -95,6 +95,10 @@ class LearningPipelineService
                 'analysis_id' => $analysis->id,
                 'captured_at' => $analysis->created_at?->toISOString(),
                 'policy_version' => $consent->policy_version,
+                'age_band' => $user->age_band,
+                'skin_tone_scale' => $user->skin_tone_scale,
+                'skin_goals' => $user->skin_goals ?? [],
+                'capture_context' => $analysis->raw_result['capture_context'] ?? null,
             ],
         ]);
     }

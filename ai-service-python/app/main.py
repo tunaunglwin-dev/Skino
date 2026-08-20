@@ -1,6 +1,7 @@
+import json
 import os
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 
 from app.calibration import HeuristicCalibration
 from app.schemas import AnalysisResponse
@@ -23,7 +24,7 @@ def health() -> dict[str, str]:
 
 
 @app.post("/analyze", response_model=AnalysisResponse)
-async def analyze_skin(image: UploadFile = File(...)) -> AnalysisResponse:
+async def analyze_skin(image: UploadFile = File(...), face_landmarks: str | None = Form(None)) -> AnalysisResponse:
     if image.content_type not in ALLOWED_IMAGE_TYPES:
         raise HTTPException(status_code=415, detail="Only JPEG, PNG, and WebP images are supported.")
 
@@ -32,7 +33,28 @@ async def analyze_skin(image: UploadFile = File(...)) -> AnalysisResponse:
         raise HTTPException(status_code=413, detail="Image must be 8 MB or smaller.")
 
     try:
-        return analyzer.analyze(image_bytes)
+        landmarks = parse_landmarks(face_landmarks)
+        return analyzer.analyze(image_bytes, landmarks)
     except InvalidImageError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+def parse_landmarks(value: str | None) -> list[dict[str, float]] | None:
+    if not value:
+        return None
+    try:
+        payload = json.loads(value)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=422, detail="face_landmarks must be valid JSON.") from exc
+    if not isinstance(payload, list) or len(payload) < 468:
+        raise HTTPException(status_code=422, detail="face_landmarks must contain at least 468 points.")
+    normalized = []
+    for point in payload[:478]:
+        if not isinstance(point, dict) or "x" not in point or "y" not in point:
+            raise HTTPException(status_code=422, detail="Each face landmark needs x and y coordinates.")
+        try:
+            normalized.append({"x": float(point["x"]), "y": float(point["y"]), "z": float(point.get("z", 0))})
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail="Face landmark coordinates must be numeric.") from exc
+    return normalized
         
