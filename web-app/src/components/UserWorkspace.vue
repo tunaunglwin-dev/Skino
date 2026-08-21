@@ -35,6 +35,14 @@ const props = defineProps({
 const emit = defineEmits(['logout', 'profile-updated', 'training-consent-updated'])
 
 const activeView = ref('home')
+const savedLanguage = localStorage.getItem('skino-workspace-language')
+const language = ref(savedLanguage === 'en' ? 'en' : 'my')
+const isMyanmar = computed(() => language.value === 'my')
+const t = (myanmar, english) => (isMyanmar.value ? myanmar : english)
+function setLanguage(nextLanguage) {
+  language.value = nextLanguage === 'en' ? 'en' : 'my'
+  localStorage.setItem('skino-workspace-language', language.value)
+}
 const history = ref([])
 const routine = ref(null)
 const result = ref(null)
@@ -88,23 +96,23 @@ const appointmentForm = ref({
 let analysisController = null
 let analysisProgressTimer = null
 
-const analysisStages = [
-  { title: 'ပုံကို လုံခြုံစွာ ပြင်ဆင်နေသည်', detail: 'Preparing your selected frame' },
-  { title: 'ပုံအရည်အသွေး စစ်ဆေးနေသည်', detail: 'Checking lighting, clarity and face position' },
-  { title: 'အသားအရေ အချက်များကို ခွဲခြမ်းနေသည်', detail: 'Analyzing visible skin signals and zones' },
-  { title: 'ရလဒ်နှင့် routine ကို ပြင်ဆင်နေသည်', detail: 'Building your clear result and care guidance' },
-]
+const analysisStages = computed(() => [
+  { title: t('ပုံကို လုံခြုံစွာ ပြင်ဆင်နေသည်', 'Preparing your photos securely'), detail: t('ရွေးထားသော ပုံများကို ပြင်ဆင်နေသည်', 'Preparing your three selected frames') },
+  { title: t('ပုံအရည်အသွေး စစ်ဆေးနေသည်', 'Checking image quality'), detail: t('အလင်း၊ ကြည်လင်မှုနှင့် မျက်နှာအနေအထား စစ်နေသည်', 'Checking lighting, clarity and face position') },
+  { title: t('အသားအရေ အချက်များကို ခွဲခြမ်းနေသည်', 'Analyzing visible skin signals'), detail: t('မျက်နှာနေရာခွဲနှင့် မြင်နိုင်သောအချက်များ စစ်နေသည်', 'Analyzing visible signals inside each face zone') },
+  { title: t('ရလဒ်နှင့် routine ကို ပြင်ဆင်နေသည်', 'Building your result and routine'), detail: t('နားလည်လွယ်သော ရလဒ်နှင့် care guidance ပြင်ဆင်နေသည်', 'Preparing clear results and practical care guidance') },
+])
 
 const user = computed(() => profile.value || props.session.user || {})
 const token = computed(() => props.session.token)
 const latestResult = computed(() => result.value || history.value[0] || null)
 const selectedAppointmentScan = computed(() => history.value.find((item) => String(item.id) === appointmentScanId.value) || latestResult.value)
-const currentAnalysisStage = computed(() => analysisStages[analysisStageIndex.value] || analysisStages[0])
+const currentAnalysisStage = computed(() => analysisStages.value[analysisStageIndex.value] || analysisStages.value[0])
 const operationLabel = computed(() => {
-  if (activeView.value === 'routine') return 'Routine ကို လုံခြုံစွာ သိမ်းနေသည်…'
-  if (activeView.value === 'history') return 'Scan history ကို ပြင်ဆင်နေသည်…'
-  if (activeView.value === 'result') return 'Care plan ကို ပြင်ဆင်နေသည်…'
-  return 'အချက်အလက်ကို သိမ်းနေသည်…'
+  if (activeView.value === 'routine') return t('Routine ကို လုံခြုံစွာ သိမ်းနေသည်…', 'Saving your routine securely…')
+  if (activeView.value === 'history') return t('စကင်မှတ်တမ်းကို ပြင်ဆင်နေသည်…', 'Updating scan history…')
+  if (activeView.value === 'result') return t('Care plan ကို ပြင်ဆင်နေသည်…', 'Preparing your care plan…')
+  return t('အချက်အလက်ကို သိမ်းနေသည်…', 'Saving your changes…')
 })
 const cameraSupported = computed(() => Boolean(navigator.mediaDevices?.getUserMedia))
 function routineTaskFromStep(step, index) {
@@ -128,14 +136,14 @@ const routineTaskGroups = computed(() => {
   return [
   {
     key: 'morning',
-    title: 'မနက်ပိုင်း',
-    subtitle: 'နေ့သစ်အတွက် ကာကွယ်မှုနှင့် ရေဓာတ်ဖြည့်ခြင်း',
+    title: t('မနက်ပိုင်း', 'Morning'),
+    subtitle: t('နေ့သစ်အတွက် ကာကွယ်မှုနှင့် ရေဓာတ်ဖြည့်ခြင်း', 'Hydrate and protect for the day ahead'),
     tasks: morningTasks,
   },
   {
     key: 'night',
-    title: 'ညပိုင်း',
-    subtitle: 'နေ့တာကုန်ပြီးနောက် သန့်စင်၍ ပြန်လည်ထိန်းသိမ်းခြင်း',
+    title: t('ညပိုင်း', 'Evening'),
+    subtitle: t('နေ့တာကုန်ပြီးနောက် သန့်စင်၍ ပြန်လည်ထိန်းသိမ်းခြင်း', 'Cleanse and restore after the day'),
     tasks: nightTasks,
   },
   ]
@@ -177,16 +185,32 @@ const skinGoalOptions = [
 ]
 
 const workspaceModules = computed(() => [
-  { key: 'scan', title: 'မျက်နှာ စကင်', subtitle: 'ကင်မရာဖြင့် အသားအရေကို စစ်ဆေးပါ', meta: 'စကင် စမယ်', icon: scanIcon, accent: '#f36a16' },
-  { key: 'routine', title: 'နေ့စဉ် ထိန်းသိမ်းမှု', subtitle: routine.value ? `ဒီနေ့ ${todayProgress.value}% ပြီးစီး` : 'စကင်ရလဒ်မှ အစီအစဉ် စတင်ပါ', meta: routine.value ? 'ဆက်လုပ်မယ်' : 'မစတင်ရသေး', icon: routineIcon, accent: '#0e5c56' },
-  { key: 'history', title: 'စကင် မှတ်တမ်း', subtitle: `သိမ်းထားသော ရလဒ် ${history.value.length} ခု`, meta: 'တိုးတက်မှုကြည့်မယ်', icon: historyIcon, accent: '#c67d32' },
-  { key: 'safety', title: 'အကူအညီနှင့် လုံခြုံမှု', subtitle: 'Privacy၊ consent နှင့် AI အသုံးပြုပုံကို ထိန်းချုပ်ပါ', meta: 'သင့်ရွေးချယ်မှု', icon: calmMascot, accent: '#0e5c56' },
-  { key: 'appointment', title: 'ကျွမ်းကျင်သူ အကူအညီ', subtitle: 'ရလဒ်ကို ကျွမ်းကျင်သူထံ ပို့ပါ', meta: latestResult.value ? 'တောင်းဆိုနိုင်ပြီ' : 'စကင်လိုအပ်သည်', icon: specialistIcon, accent: '#38748f' },
+  { key: 'scan', title: t('မျက်နှာ စကင်', 'Face scan'), subtitle: t('ကင်မရာဖြင့် အသားအရေကို စစ်ဆေးပါ', 'Check visible skin signals with your camera'), meta: t('စကင် စမယ်', 'Start scan'), icon: scanIcon, accent: '#f36a16' },
+  { key: 'routine', title: t('နေ့စဉ် ထိန်းသိမ်းမှု', 'Daily routine'), subtitle: routine.value ? t(`ဒီနေ့ ${todayProgress.value}% ပြီးစီး`, `${todayProgress.value}% complete today`) : t('စကင်ရလဒ်မှ အစီအစဉ် စတင်ပါ', 'Build a routine from your scan'), meta: routine.value ? t('ဆက်လုပ်မယ်', 'Continue') : t('မစတင်ရသေး', 'Not started'), icon: routineIcon, accent: '#0e5c56' },
+  { key: 'history', title: t('စကင် မှတ်တမ်း', 'Scan history'), subtitle: t(`သိမ်းထားသော ရလဒ် ${history.value.length} ခု`, `${history.value.length} saved results`), meta: t('တိုးတက်မှုကြည့်မယ်', 'View progress'), icon: historyIcon, accent: '#c67d32' },
+  { key: 'safety', title: t('အကူအညီနှင့် လုံခြုံမှု', 'Help & safety'), subtitle: t('Privacy၊ consent နှင့် AI အသုံးပြုပုံကို ထိန်းချုပ်ပါ', 'Control privacy, consent and how AI is used'), meta: t('သင့်ရွေးချယ်မှု', 'Your choices'), icon: calmMascot, accent: '#0e5c56' },
+  { key: 'appointment', title: t('ကျွမ်းကျင်သူ အကူအညီ', 'Specialist support'), subtitle: t('ရလဒ်ကို ကျွမ်းကျင်သူထံ ပို့ပါ', 'Share a saved result for professional review'), meta: latestResult.value ? t('တောင်းဆိုနိုင်ပြီ', 'Ready to request') : t('စကင်လိုအပ်သည်', 'Scan required'), icon: specialistIcon, accent: '#38748f' },
 ])
 const currentViewTitle = computed(() => ({
-  home: 'ပင်မ စာမျက်နှာ', profile: 'ကိုယ်ရေးအချက်အလက်', safety: 'အကူအညီနှင့် လုံခြုံမှု', scan: 'မျက်နှာ စကင်', result: 'စကင် ရလဒ်', routine: 'နေ့စဉ် ထိန်းသိမ်းမှု', history: 'စကင် မှတ်တမ်း', appointment: 'ကျွမ်းကျင်သူ အကူအညီ',
-})[activeView.value] || 'Skino အလုပ်နေရာ')
-
+  home: t('ပင်မ စာမျက်နှာ', 'Dashboard'), profile: t('ကိုယ်ရေးအချက်အလက်', 'Profile'), safety: t('အကူအညီနှင့် လုံခြုံမှု', 'Help & safety'), scan: t('မျက်နှာ စကင်', 'Face scan'), result: t('စကင် ရလဒ်', 'Scan result'), routine: t('နေ့စဉ် ထိန်းသိမ်းမှု', 'Daily routine'), history: t('စကင် မှတ်တမ်း', 'Scan history'), appointment: t('ကျွမ်းကျင်သူ အကူအညီ', 'Specialist support'),
+})[activeView.value] || t('Skino အလုပ်နေရာ', 'Skino workspace'))
+const historySummary = computed(() => {
+  const scores = history.value.map((item) => Number(item.skin_health_score || 0))
+  const latest = scores[0] || 0
+  const previous = scores[1] || latest
+  return {
+    latest,
+    previous,
+    delta: latest - previous,
+    average: scores.length ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length) : 0,
+  }
+})
+const dashboardGreeting = computed(() => {
+  const hour = new Date().getHours()
+  if (hour < 12) return t('မင်္ဂလာနံနက်ခင်းပါ', 'Good morning')
+  if (hour < 18) return t('မင်္ဂလာနေ့လယ်ခင်းပါ', 'Good afternoon')
+  return t('မင်္ဂလာညနေခင်းပါ', 'Good evening')
+})
 let faceDetector = null
 let faceLandmarker = null
 let detectorMode = 'IMAGE'
@@ -430,20 +454,32 @@ function metricPercent(value) {
   return `${Math.round(Number(value || 0) * 100)}%`
 }
 
-function skinTypeMy(value) {
-  return ({ normal: 'ပုံမှန်အသားအရေ', oily: 'အဆီပြန်အသားအရေ', dry: 'ခြောက်သွေ့အသားအရေ', combination: 'ပေါင်းစပ်အသားအရေ', sensitive: 'ထိခိုက်လွယ်အသားအရေ' })[value] || 'အသားအရေ အမျိုးအစား'
+function skinTypeLabel(value) {
+  const labels = isMyanmar.value
+    ? { normal: 'ပုံမှန်အသားအရေ', oily: 'အဆီပြန်အသားအရေ', dry: 'ခြောက်သွေ့အသားအရေ', combination: 'ပေါင်းစပ်အသားအရေ', sensitive: 'ထိခိုက်လွယ်အသားအရေ' }
+    : { normal: 'Normal skin', oily: 'Oily skin', dry: 'Dry skin', combination: 'Combination skin', sensitive: 'Sensitive skin' }
+  return labels[value] || t('အသားအရေ အမျိုးအစား', 'Skin type')
 }
 
-function severityMy(value) {
-  return ({ none: 'မတွေ့ရှိပါ', low: 'အလွန်နည်း', mild: 'အနည်းငယ်', moderate: 'အသင့်အတင့်', severe: 'ပြင်းထန်' })[value] || 'အနည်းငယ်'
+function severityLabel(value) {
+  const labels = isMyanmar.value
+    ? { none: 'မတွေ့ရှိပါ', low: 'အလွန်နည်း', mild: 'အနည်းငယ်', moderate: 'အသင့်အတင့်', severe: 'ပြင်းထန်' }
+    : { none: 'None visible', low: 'Very low', mild: 'Mild', moderate: 'Moderate', severe: 'Severe' }
+  return labels[value] || t('အနည်းငယ်', 'Mild')
 }
 
-function concernMy(value) {
-  return ({ acne: 'ဝက်ခြံ', redness: 'နီမြန်းမှု', dark_spots: 'အမည်းစက်', oiliness: 'အဆီပြန်မှု', dryness: 'ခြောက်သွေ့မှု', texture: 'အသားအရေ မညီညာမှု', pores: 'ချွေးပေါက်ကျယ်မှု' })[value] || String(value || '').replaceAll('_', ' ')
+function concernLabel(value) {
+  const labels = isMyanmar.value
+    ? { acne: 'ဝက်ခြံ', redness: 'နီမြန်းမှု', dark_spots: 'အမည်းစက်', oiliness: 'အဆီပြန်မှု', dryness: 'ခြောက်သွေ့မှု', texture: 'အသားအရေ မညီညာမှု', pores: 'ချွေးပေါက်ကျယ်မှု' }
+    : { acne: 'Acne', redness: 'Redness', dark_spots: 'Dark spots', oiliness: 'Oiliness', dryness: 'Dryness', texture: 'Uneven texture', pores: 'Visible pores' }
+  return labels[value] || String(value || '').replaceAll('_', ' ')
 }
 
-function zoneNameMy(zone) {
-  return ({ forehead: 'နဖူး', left_cheek: 'ဘယ်ဘက်ပါး', right_cheek: 'ညာဘက်ပါး', nose: 'နှာခေါင်း', chin: 'မေးစေ့' })[zone?.key] || zone?.label || 'မျက်နှာ Zone'
+function zoneNameLabel(zone) {
+  const labels = isMyanmar.value
+    ? { forehead: 'နဖူး', left_cheek: 'ဘယ်ဘက်ပါး', right_cheek: 'ညာဘက်ပါး', nose: 'နှာခေါင်း', chin: 'မေးစေ့' }
+    : { forehead: 'Forehead', left_cheek: 'Left cheek', right_cheek: 'Right cheek', nose: 'Nose', chin: 'Chin' }
+  return labels[zone?.key] || zone?.label || t('မျက်နှာနေရာ', 'Face zone')
 }
 
 function concernPalette(name) {
@@ -881,7 +917,7 @@ async function submitScan() {
       frames: capturedFrames.value.slice(1),
     }, analysisController.signal)
     stopAnalysisProgress()
-    analysisStageIndex.value = analysisStages.length - 1
+    analysisStageIndex.value = analysisStages.value.length - 1
     analysisProgress.value = 100
     await new Promise((resolve) => window.setTimeout(resolve, 260))
     history.value = [result.value, ...history.value.filter((item) => item.id !== result.value.id)]
@@ -977,9 +1013,11 @@ async function removeHistoryItem(item) {
 }
 
 function formatDate(value) {
-  if (!value) return 'လတ်တလော စကင်'
+  if (!value) return t('လတ်တလော စကင်', 'Recent scan')
   const date = new Date(value)
-  return `${date.getFullYear()} ခုနှစ် ${date.getMonth() + 1} လ ${date.getDate()} ရက်`
+  return new Intl.DateTimeFormat(isMyanmar.value ? 'my-MM' : 'en-US', {
+    year: 'numeric', month: 'short', day: 'numeric',
+  }).format(date)
 }
 
 watch(activeView, (view) => { if (view !== 'scan') stopCamera() })
@@ -1000,28 +1038,29 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <main class="workspace-shell min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(243,106,22,.07),transparent_30%)] bg-skino-cream px-3 pt-2 text-skino-ink sm:px-5 lg:px-8" :class="activeView === 'scan' ? 'pb-1 lg:h-screen lg:overflow-hidden' : 'pb-12'">
+  <main class="workspace-shell min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(243,106,22,.07),transparent_30%)] bg-skino-cream px-3 pt-2 text-skino-ink sm:px-5 lg:px-8" :class="activeView === 'scan' ? 'pb-1 lg:h-screen lg:overflow-hidden' : 'pb-12'" :lang="language === 'my' ? 'my' : 'en'">
     <header class="workspace-topbar sticky top-2 z-30 mx-auto grid min-h-[70px] max-w-7xl grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-skino-line bg-white/90 px-3 shadow-skino backdrop-blur-xl md:grid-cols-[1fr_auto_1fr] sm:px-4">
       <button class="workspace-brand flex min-w-0 items-center gap-3 text-left" type="button" @click="openView('home')">
         <img class="size-11 rounded-xl border border-skino-line-orange bg-white object-cover shadow-skino-sm" :src="logo" alt="" />
-        <span class="grid leading-tight"><strong class="text-sm font-medium">Skino</strong><small class="mt-0.5 text-[10px] text-skino-muted">ကိုယ်ပိုင် အသားအရေ အလုပ်နေရာ</small></span>
+        <span class="grid leading-tight"><strong class="text-sm font-medium">Skino</strong><small class="mt-0.5 text-[10px] text-skino-muted">{{ t('ကိုယ်ပိုင် အသားအရေ အလုပ်နေရာ', 'Your private skin workspace') }}</small></span>
       </button>
 
-      <div class="hidden items-center gap-2 rounded-full border border-skino-line bg-white px-4 py-2 text-[11px] text-skino-muted shadow-skino-sm md:flex"><span class="size-2 rounded-full bg-emerald-500"></span><span>အလုပ်နေရာ</span><b class="font-medium text-skino-ink">/ {{ currentViewTitle }}</b></div>
+      <div class="hidden items-center gap-2 rounded-full border border-skino-line bg-white px-4 py-2 text-[11px] text-skino-muted shadow-skino-sm md:flex"><span class="size-2 rounded-full bg-emerald-500"></span><span>{{ t('အလုပ်နေရာ', 'Workspace') }}</span><b class="font-medium text-skino-ink">/ {{ currentViewTitle }}</b></div>
 
       <div class="workspace-actions flex items-center gap-2 justify-self-end">
-        <button class="workspace-pricing group flex min-h-10 items-center gap-2 rounded-full border border-skino-line-orange bg-white px-3 text-[10px] text-skino-orange-dark shadow-skino-sm transition hover:-translate-y-0.5 hover:border-skino-orange hover:bg-skino-orange-soft" type="button" aria-label="Open pricing plans" @click="pricingOpen = true"><span class="grid size-6 place-items-center rounded-full bg-skino-orange-soft text-[11px] transition group-hover:bg-white">✦</span><span class="hidden sm:inline">Pricing plans</span></button>
+        <div class="workspace-language-switch" role="group" :aria-label="t('ဘာသာစကား ရွေးချယ်ရန်', 'Choose dashboard language')"><button type="button" :class="{ active: language === 'my' }" :aria-pressed="language === 'my'" @click="setLanguage('my')">မြန်မာ</button><button type="button" :class="{ active: language === 'en' }" :aria-pressed="language === 'en'" @click="setLanguage('en')">EN</button></div>
+        <button class="workspace-pricing group flex min-h-10 items-center gap-2 rounded-full border border-skino-line-orange bg-white px-3 text-[10px] text-skino-orange-dark shadow-skino-sm transition hover:-translate-y-0.5 hover:border-skino-orange hover:bg-skino-orange-soft" type="button" :aria-label="t('ဈေးနှုန်းအစီအစဉ်များ ဖွင့်ရန်', 'Open pricing plans')" @click="pricingOpen = true"><span class="grid size-6 place-items-center rounded-full bg-skino-orange-soft text-[11px] transition group-hover:bg-white">✦</span><span class="hidden xl:inline">{{ t('အစီအစဉ်များ', 'Plans') }}</span></button>
         <div class="relative">
         <button class="workspace-profile-trigger flex min-h-11 items-center gap-2 rounded-full border border-skino-line-orange bg-skino-paper p-1.5 pr-3 text-left shadow-skino-sm transition hover:-translate-y-0.5 hover:border-skino-orange" type="button" :aria-expanded="profileOpen" @click="profileOpen = !profileOpen">
           <img v-if="user.avatar_url" class="size-9 rounded-full object-cover" :src="user.avatar_url" alt="" referrerpolicy="no-referrer" />
           <span v-else class="grid size-9 place-items-center rounded-full bg-skino-green text-xs text-white">{{ user.name?.charAt(0) || 'S' }}</span>
-          <span class="hidden max-w-32 leading-tight sm:grid"><strong class="truncate text-[11px] font-medium">{{ user.name }}</strong><small class="truncate text-[9px] text-skino-muted">ကိုယ်ရေးအချက်အလက်</small></span><span class="text-xs text-skino-muted">⌄</span>
+          <span class="hidden max-w-32 leading-tight sm:grid"><strong class="truncate text-[11px] font-medium">{{ user.name }}</strong><small class="truncate text-[9px] text-skino-muted">{{ t('ကိုယ်ရေးအချက်အလက်', 'Profile') }}</small></span><span class="text-xs text-skino-muted">⌄</span>
         </button>
         <div v-if="profileOpen" class="absolute right-0 top-[calc(100%+8px)] z-50 grid w-64 gap-3 rounded-2xl border border-skino-line bg-white p-4 shadow-skino">
           <div class="flex items-center gap-3"><span class="grid size-11 place-items-center rounded-xl bg-skino-green text-sm text-white">{{ user.name?.charAt(0) || 'S' }}</span><span class="grid min-w-0"><strong class="truncate text-sm font-medium">{{ user.name }}</strong><small class="truncate text-[10px] text-skino-muted">{{ user.email }}</small></span></div>
-          <div class="grid grid-cols-2 gap-2"><div class="rounded-lg bg-emerald-50 p-2.5"><small class="text-[9px] text-skino-muted">စကင်မှတ်တမ်း</small><strong class="mt-1 block text-sm text-skino-green">{{ history.length }} ခု</strong></div><div class="rounded-lg bg-skino-orange-soft p-2.5"><small class="text-[9px] text-skino-muted">ဒီနေ့ routine</small><strong class="mt-1 block text-sm text-skino-orange-dark">{{ todayProgress }}%</strong></div></div>
-          <button class="min-h-10 rounded-lg bg-skino-orange-soft text-[11px] text-skino-orange-dark hover:bg-skino-line-orange" type="button" @click="openProfile">ကိုယ်ရေးအချက်အလက် ပြင်မယ်</button>
-          <button class="min-h-10 rounded-lg border border-skino-line text-[11px] text-skino-muted hover:border-red-200 hover:text-red-700" type="button" @click="emit('logout')">အကောင့်မှ ထွက်မယ်</button>
+          <div class="grid grid-cols-2 gap-2"><div class="rounded-lg bg-emerald-50 p-2.5"><small class="text-[9px] text-skino-muted">{{ t('စကင်မှတ်တမ်း', 'Saved scans') }}</small><strong class="mt-1 block text-sm text-skino-green">{{ history.length }} {{ t('ခု', '') }}</strong></div><div class="rounded-lg bg-skino-orange-soft p-2.5"><small class="text-[9px] text-skino-muted">{{ t('ဒီနေ့ routine', 'Today’s routine') }}</small><strong class="mt-1 block text-sm text-skino-orange-dark">{{ todayProgress }}%</strong></div></div>
+          <button class="min-h-10 rounded-lg bg-skino-orange-soft text-[11px] text-skino-orange-dark hover:bg-skino-line-orange" type="button" @click="openProfile">{{ t('ကိုယ်ရေးအချက်အလက် ပြင်မယ်', 'Edit profile') }}</button>
+          <button class="min-h-10 rounded-lg border border-skino-line text-[11px] text-skino-muted hover:border-red-200 hover:text-red-700" type="button" @click="emit('logout')">{{ t('အကောင့်မှ ထွက်မယ်', 'Sign out') }}</button>
         </div>
         </div>
       </div>
@@ -1040,10 +1079,10 @@ onUnmounted(() => {
         <div class="analysis-loading-top"><span><i></i>Skino AI service</span><b>{{ analysisProgress }}%</b></div>
         <div class="analysis-loading-body">
           <div class="analysis-preview"><img v-if="previewUrl" :src="previewUrl" alt="Selected scan preview" /><img v-else :src="cameraMascot" alt="" /><span><i></i><i></i><i></i></span></div>
-          <div class="analysis-loading-copy"><img :src="calmMascot" alt="" /><p>သင့်ရလဒ်ကို ပြင်ဆင်နေပါသည်</p><h2 id="analysis-loading-title">{{ currentAnalysisStage.title }}</h2><span>{{ currentAnalysisStage.detail }}</span><div class="analysis-progress-track" :aria-valuenow="analysisProgress" aria-valuemin="0" aria-valuemax="100" role="progressbar"><i :style="{ width: `${analysisProgress}%` }"></i></div><small>Render service နိုးထရန် အချိန်အနည်းငယ်ကြာနိုင်ပါသည်။ ဤစာမျက်နှာကို မပိတ်ပါနှင့်။</small></div>
+          <div class="analysis-loading-copy"><img :src="calmMascot" alt="" /><p>{{ t('သင့်ရလဒ်ကို ပြင်ဆင်နေပါသည်', 'Preparing your result') }}</p><h2 id="analysis-loading-title">{{ currentAnalysisStage.title }}</h2><span>{{ currentAnalysisStage.detail }}</span><div class="analysis-progress-track" :aria-valuenow="analysisProgress" aria-valuemin="0" aria-valuemax="100" role="progressbar"><i :style="{ width: `${analysisProgress}%` }"></i></div><small>{{ t('Render service နိုးထရန် အချိန်အနည်းငယ်ကြာနိုင်ပါသည်။ ဤစာမျက်နှာကို မပိတ်ပါနှင့်။', 'The analysis service may take a moment to wake up. Please keep this page open.') }}</small></div>
         </div>
         <div class="analysis-stage-list"><span v-for="(stage, index) in analysisStages" :key="stage.title" :class="{ active: index === analysisStageIndex, complete: index < analysisStageIndex || analysisProgress === 100 }"><i>{{ index < analysisStageIndex || analysisProgress === 100 ? '✓' : index + 1 }}</i><b>{{ stage.title }}</b></span></div>
-        <footer><span><i></i>ဓာတ်ပုံကို မပျောက်စေဘဲ ရပ်ပြီး ပြန်စမ်းနိုင်ပါသည်</span><button type="button" @click="cancelAnalysis">စစ်ဆေးမှု ရပ်မယ်</button></footer>
+        <footer><span><i></i>{{ t('ဓာတ်ပုံကို မပျောက်စေဘဲ ရပ်ပြီး ပြန်စမ်းနိုင်ပါသည်', 'You can stop and retry without losing your photo') }}</span><button type="button" @click="cancelAnalysis">{{ t('စစ်ဆေးမှု ရပ်မယ်', 'Stop analysis') }}</button></footer>
       </section>
     </div>
 
@@ -1056,12 +1095,30 @@ onUnmounted(() => {
     <section v-if="Object.values(loadErrors).some(Boolean)" class="mx-auto mt-3 flex max-w-6xl flex-wrap items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><span class="mr-auto">အချို့အချက်အလက်များ မတင်နိုင်သေးပါ။ အပိုင်းတစ်ခုချင်း ပြန်စမ်းနိုင်သည်။</span><button v-if="loadErrors.history" class="rounded-lg border border-amber-300 bg-white px-3 py-2" type="button" :disabled="Boolean(retryingSection)" @click="retryWorkspaceSection('history')">{{ retryingSection === 'history' ? 'တင်နေသည်…' : 'မှတ်တမ်း ပြန်တင်မယ်' }}</button><button v-if="loadErrors.routine" class="rounded-lg border border-amber-300 bg-white px-3 py-2" type="button" :disabled="Boolean(retryingSection)" @click="retryWorkspaceSection('routine')">{{ retryingSection === 'routine' ? 'တင်နေသည်…' : 'Routine ပြန်တင်မယ်' }}</button><button v-if="loadErrors.profile" class="rounded-lg border border-amber-300 bg-white px-3 py-2" type="button" :disabled="Boolean(retryingSection)" @click="retryWorkspaceSection('profile')">{{ retryingSection === 'profile' ? 'တင်နေသည်…' : 'Profile ပြန်တင်မယ်' }}</button></section>
 
     <section v-if="pageLoading" class="workspace-loading-screen" role="status" aria-live="polite">
-      <div class="workspace-loading-brand"><span><img :src="calmMascot" alt="" /><i></i></span><div><p>Skino Workspace</p><h1>သင့်အသားအရေ အချက်အလက်များကို ပြင်ဆင်နေသည်</h1><small>Loading scan history, routine and private profile…</small></div></div>
+      <div class="workspace-loading-brand"><span><img :src="calmMascot" alt="" /><i></i></span><div><p>Skino Workspace</p><h1>{{ t('သင့်အသားအရေ အချက်အလက်များကို ပြင်ဆင်နေသည်', 'Preparing your private skin workspace') }}</h1><small>{{ t('စကင်မှတ်တမ်း၊ routine နှင့် profile ကို တင်နေသည်…', 'Loading scan history, routine and private profile…') }}</small></div></div>
       <div class="workspace-loading-bar"><i></i></div>
       <div class="workspace-skeleton-grid" aria-hidden="true"><span v-for="index in 5" :key="index"><i></i><b></b><small></small><em></em></span></div>
     </section>
 
-    <section v-else-if="activeView === 'home'" class="workspace-view mx-auto grid max-w-7xl content-start py-5 sm:py-8 lg:py-10">
+    <section v-else-if="activeView === 'home'" class="workspace-view dashboard-home mx-auto grid max-w-7xl content-start gap-5 py-5 sm:gap-7 sm:py-8">
+      <article class="dashboard-hero">
+        <div class="dashboard-hero-copy">
+          <span class="dashboard-hero-kicker"><i></i>{{ dashboardGreeting }}, {{ user.name?.split(' ')[0] || 'Skino' }}</span>
+          <h1>{{ t('သင့်အသားအရေကို နေ့တိုင်း ပိုကောင်းစွာ နားလည်ပါ။', 'Understand your skin better, every day.') }}</h1>
+          <p>{{ t('လမ်းညွှန်ထားသော စကင်၊ ရှင်းလင်းသော ရလဒ်နှင့် လိုက်နာရလွယ်သော routine ကို တစ်နေရာတည်းတွင် ကြည့်ရှုနိုင်ပါသည်။', 'Use guided scans, clear results and a practical routine—all in one private workspace.') }}</p>
+          <div class="dashboard-hero-actions"><button type="button" @click="openView('scan')"><span>◎</span>{{ t('စကင်အသစ် စမယ်', 'Start a new scan') }}</button><button type="button" @click="openView(history.length ? 'history' : 'safety')">{{ history.length ? t('တိုးတက်မှုကြည့်မယ်', 'View progress') : t('စကင်အကြောင်း လေ့လာမယ်', 'How scanning works') }} <span>→</span></button></div>
+          <div class="dashboard-trust-row"><span>✓ {{ t('ကိုယ်ပိုင်နေရာ', 'Private workspace') }}</span><span>✓ {{ t('ပုံ ၃ ပုံ နှိုင်းယှဉ်မှု', 'Three-frame median') }}</span><span>✓ {{ t('Diagnosis မဟုတ်ပါ', 'Wellness guidance') }}</span></div>
+        </div>
+        <div class="dashboard-hero-visual">
+          <span class="dashboard-orbit dashboard-orbit-one"></span><span class="dashboard-orbit dashboard-orbit-two"></span>
+          <div class="dashboard-score-card"><small>{{ latestResult ? t('နောက်ဆုံး skin score', 'Latest skin score') : t('ပထမဆုံး စကင်', 'Your first scan') }}</small><strong>{{ latestResult?.skin_health_score ?? '—' }}</strong><span>{{ latestResult ? skinTypeLabel(latestResult.skin_type) : t('စတင်ရန် အဆင်သင့်', 'Ready when you are') }}</span></div>
+          <img :src="cameraMascot" alt="" />
+          <div class="dashboard-floating-card dashboard-floating-history"><span>◷</span><strong>{{ history.length }}</strong><small>{{ t('သိမ်းထားသော စကင်', 'saved scans') }}</small></div>
+          <div class="dashboard-floating-card dashboard-floating-routine"><span>✓</span><strong>{{ todayProgress }}%</strong><small>{{ t('ဒီနေ့ routine', 'today’s routine') }}</small></div>
+        </div>
+      </article>
+
+      <div class="dashboard-section-heading"><div><span>{{ t('သင့်အလုပ်နေရာ', 'Your workspace') }}</span><h2>{{ t('ဒီနေ့ ဘာလုပ်ချင်ပါသလဲ?', 'What would you like to do today?') }}</h2></div><p>{{ t('မည်သည့်အပိုင်းကိုမဆို ရွေးပြီး နောက်မှ ပြန်လာနိုင်ပါသည်။', 'Choose any area and return whenever you need it.') }}</p></div>
       <div class="workspace-module-grid grid place-content-center gap-3 sm:gap-4">
         <button v-for="module in workspaceModules" :key="module.key" class="workspace-module-card group grid w-full content-start justify-items-center gap-2 rounded-2xl border border-skino-line bg-white p-4 text-center shadow-skino-sm transition hover:-translate-y-1 hover:border-skino-line-orange hover:shadow-skino sm:gap-3 sm:p-5" type="button" :style="{ '--module-accent': module.accent }" @click="openModule(module)">
           <span class="grid size-20 place-items-center overflow-hidden rounded-2xl bg-skino-paper p-2 transition group-hover:bg-skino-orange-soft sm:size-24"><img class="size-full object-contain" :src="module.icon" alt="" /></span>
@@ -1074,7 +1131,7 @@ onUnmounted(() => {
 
     <section v-else-if="activeView === 'profile'" class="workspace-view mx-auto mt-4 grid max-w-5xl gap-4 sm:mt-6">
       <div class="flex items-center gap-3 border-b border-skino-line pb-4">
-        <button class="min-h-10 rounded-xl border border-skino-line bg-white px-3 text-[11px] text-skino-muted hover:border-skino-orange" type="button" @click="openView('home')">‹ ပင်မ</button>
+        <button class="min-h-10 rounded-xl border border-skino-line bg-white px-3 text-[11px] text-skino-muted hover:border-skino-orange" type="button" @click="openView('home')">‹ {{ t('ပင်မ', 'Home') }}</button>
         <span class="grid size-11 place-items-center rounded-xl bg-emerald-50 text-sm text-skino-green">{{ user.name?.charAt(0) || 'S' }}</span>
         <div><p class="mb-0 text-[10px] text-skino-orange-dark">ကိုယ်ရေးအချက်အလက်နှင့် privacy</p><h1 class="text-xl font-medium sm:text-2xl">သင့် Skin Profile</h1></div>
       </div>
@@ -1117,19 +1174,19 @@ onUnmounted(() => {
       </div>
     </section>
 
-    <section v-else-if="activeView === 'scan'" class="workspace-view mx-auto mt-3 grid max-w-5xl gap-3 sm:mt-4 lg:h-[calc(100svh-100px)] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
+    <section v-else-if="activeView === 'scan'" class="workspace-view mx-auto mt-3 grid max-w-4xl gap-3 sm:mt-4 lg:h-[calc(100svh-100px)] lg:grid-rows-[auto_minmax(0,1fr)] lg:overflow-hidden">
       <div class="flex items-center gap-3 border-b border-skino-line pb-3">
         <button class="min-h-10 rounded-xl border border-skino-line bg-white px-3 text-[11px] text-skino-muted hover:border-skino-orange" type="button" @click="openView('home')">‹ ပင်မ</button>
         <span class="grid size-11 place-items-center rounded-xl bg-skino-orange-soft"><img class="size-9 object-contain" :src="scanIcon" alt="" /></span>
-        <div><p class="mb-0 text-[10px] text-skino-orange-dark">မျက်နှာ စကင်</p><h1 class="text-xl font-medium sm:text-2xl">မျက်နှာကို တည့်တည့်ထားပြီး စကင်လုပ်ပါ</h1></div>
+        <div><p class="mb-0 text-[10px] text-skino-orange-dark">{{ t('မျက်နှာ စကင်', 'Face scan') }}</p><h1 class="text-xl font-medium sm:text-2xl">{{ t('မျက်နှာကို တည့်တည့်ထားပြီး စကင်လုပ်ပါ', 'Face the camera directly for a clearer scan') }}</h1></div>
       </div>
 
-      <div class="grid min-h-0 gap-3 lg:grid-cols-[minmax(0,1fr)_260px]">
-        <div class="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] rounded-2xl border border-skino-line bg-white p-3 shadow-skino-sm sm:p-4">
-          <div class="relative mx-auto grid h-[min(54svh,460px)] min-h-[290px] w-full place-items-center overflow-hidden rounded-2xl bg-[#111816] lg:h-auto lg:min-h-0">
+      <div class="grid min-h-0">
+        <div class="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] rounded-[28px] border border-skino-line bg-white p-3 shadow-skino sm:p-4">
+          <div class="relative mx-auto grid h-[min(68svh,620px)] min-h-[340px] w-full place-items-center overflow-hidden rounded-[22px] bg-[#111816] lg:h-auto lg:min-h-0">
             <video v-show="cameraActive" ref="video" class="absolute inset-0 size-full object-cover [transform:scaleX(-1)]" playsinline muted></video>
             <img v-if="previewUrl && !cameraActive" class="absolute inset-0 size-full bg-[#111816] object-contain" :src="previewUrl" alt="ရိုက်ထားသော မျက်နှာပုံ" />
-            <div v-if="!cameraActive && !previewUrl" class="grid place-items-center gap-3 px-8 text-center text-white"><img class="size-24 object-contain" :src="cameraMascot" alt="" /><strong class="text-base font-medium">စကင်လုပ်ရန် အဆင်သင့်ပါပြီ</strong><small class="max-w-sm text-[11px] leading-5 text-white/65">အလင်းရောင်ညီသော နေရာတွင် ဆံပင်ကို နဖူးမဖုံးအောင်ထားပြီး ကင်မရာကို တည့်တည့်ကြည့်ပါ။</small><button class="mt-1 min-h-11 rounded-xl bg-skino-orange px-6 text-xs font-medium text-white shadow-lg" type="button" @click="startCamera">ကင်မရာ ဖွင့်မယ်</button></div>
+            <div v-if="!cameraActive && !previewUrl" class="grid place-items-center gap-3 px-8 text-center text-white"><img class="size-24 object-contain" :src="cameraMascot" alt="" /><strong class="text-base font-medium">{{ t('စကင်လုပ်ရန် အဆင်သင့်ပါပြီ', 'Ready for your scan') }}</strong><small class="max-w-sm text-[11px] leading-5 text-white/65">{{ t('အလင်းရောင်ညီသော နေရာတွင် ဆံပင်ကို နဖူးမဖုံးအောင်ထားပြီး ကင်မရာကို တည့်တည့်ကြည့်ပါ။', 'Use even lighting, keep hair away from your forehead and look directly into the camera.') }}</small><button class="mt-1 min-h-11 rounded-xl bg-skino-orange px-6 text-xs font-medium text-white shadow-lg" type="button" @click="startCamera">{{ t('ကင်မရာ ဖွင့်မယ်', 'Open camera') }}</button></div>
 
             <div class="scan-face-guide pointer-events-none absolute inset-[9%_11%_13%] sm:inset-[9%_18%_13%]" :class="{ 'opacity-25': !cameraActive && !previewUrl, 'scan-guide-good': faceGuide.state === 'good' }">
               <span class="absolute left-0 top-0 size-16 rounded-tl-[42px] border-l-[3px] border-t-[3px]" :class="faceGuide.state === 'good' ? 'border-emerald-300' : 'border-white/80'"></span>
@@ -1144,27 +1201,18 @@ onUnmounted(() => {
             </svg>
 
             <div v-if="cameraActive || previewUrl" class="absolute inset-x-3 bottom-[68px] flex items-center gap-2 rounded-xl border px-3 py-2 text-[10px] backdrop-blur-md" :class="faceGuide.state === 'good' ? 'border-emerald-400/40 bg-emerald-950/75 text-emerald-100' : faceGuide.state === 'loading' ? 'border-white/20 bg-black/65 text-white' : 'border-amber-300/40 bg-black/70 text-amber-100'"><span class="size-2 shrink-0 rounded-full" :class="faceGuide.state === 'good' ? 'bg-emerald-400' : faceGuide.state === 'loading' ? 'animate-pulse bg-white' : 'bg-amber-300'"></span><span class="flex-1">{{ faceGuide.message }}</span><b v-if="faceGuide.confidence" class="font-medium">{{ faceGuide.confidence }}%</b></div>
-            <div class="absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/55 px-2.5 py-1.5 text-[9px] text-white/80 backdrop-blur-md"><span class="size-1.5 rounded-full bg-emerald-400"></span>Browser-only guidance</div>
-            <div v-if="cameraActive" class="absolute right-3 top-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/65 px-2.5 py-1.5 text-[9px] text-white backdrop-blur-md"><span class="mr-1">{{ capturingFrames ? 'ရိုက်နေသည်' : '3-frame' }}</span><i v-for="step in 3" :key="step" class="size-2 rounded-full transition" :class="captureProgress >= step ? 'bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,.16)]' : 'bg-white/30'"></i></div>
-            <button v-if="cameraActive" class="absolute inset-x-3 bottom-3 z-10 min-h-12 rounded-xl bg-skino-orange px-5 text-xs font-medium text-white shadow-[0_12px_30px_rgba(0,0,0,.35)] disabled:opacity-50" type="button" :disabled="!canCapture || capturingFrames" @click="captureFrame">{{ capturingFrames ? `ပုံရိုက်နေသည် ${captureProgress}/3` : canCapture ? 'ပုံ ၃ ပုံရိုက်ပြီး AI နှိုင်းယှဉ်မယ်' : 'မျက်နှာအနေအထားကို အရင်ပြင်ပါ' }}</button>
-            <button v-else-if="previewUrl && !loading" class="absolute inset-x-3 bottom-3 z-10 min-h-12 rounded-xl bg-skino-orange px-5 text-xs font-medium text-white shadow-[0_12px_30px_rgba(0,0,0,.35)] disabled:opacity-50" type="button" :disabled="!canAnalyze || !online" @click="submitScan">{{ canAnalyze ? 'အသားအရေ ရလဒ်ကြည့်မယ် →' : 'မှန်ကန်သော ဓာတ်ပုံ လိုအပ်သည်' }}</button>
+            <div v-if="cameraActive" class="absolute right-3 top-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/65 px-2.5 py-1.5 text-[9px] text-white backdrop-blur-md"><span class="mr-1">{{ capturingFrames ? t('ရိုက်နေသည်', 'Capturing') : '3-frame' }}</span><i v-for="step in 3" :key="step" class="size-2 rounded-full transition" :class="captureProgress >= step ? 'bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,.16)]' : 'bg-white/30'"></i></div>
+            <button v-if="cameraActive" class="group absolute bottom-3 left-1/2 z-10 flex min-h-14 -translate-x-1/2 items-center gap-2.5 rounded-full border border-white/30 bg-white/95 py-1.5 pl-2 pr-5 text-xs font-medium text-skino-ink shadow-[0_16px_40px_rgba(0,0,0,.42)] backdrop-blur-md transition hover:-translate-y-0.5 hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-50" type="button" :aria-label="t('ပုံရိုက်မယ်', 'Capture')" :disabled="!canCapture || capturingFrames" @click="captureFrame"><span class="grid size-11 place-items-center rounded-full bg-skino-orange shadow-[inset_0_0_0_3px_rgba(255,255,255,.34),0_6px_16px_rgba(243,106,22,.35)]"><span class="size-5 rounded-full border-2 border-white bg-white/20" :class="{ 'animate-pulse': capturingFrames }"></span></span><span>{{ capturingFrames ? t(`ရိုက်နေသည် ${captureProgress}/3`, `Capturing ${captureProgress}/3`) : t('ပုံရိုက်မယ်', 'Capture') }}</span></button>
+            <button v-else-if="previewUrl && !loading" class="absolute inset-x-3 bottom-3 z-10 min-h-12 rounded-xl bg-skino-orange px-5 text-xs font-medium text-white shadow-[0_12px_30px_rgba(0,0,0,.35)] disabled:opacity-50" type="button" :disabled="!canAnalyze || !online" @click="submitScan">{{ canAnalyze ? t('အသားအရေ ရလဒ်ကြည့်မယ် →', 'Analyze my skin →') : t('မှန်ကန်သော ဓာတ်ပုံ လိုအပ်သည်', 'A valid photo is required') }}</button>
             <canvas ref="canvas" hidden></canvas>
           </div>
 
           <div class="grid gap-2 pt-2 sm:grid-cols-2">
-            <button v-if="previewUrl" class="min-h-10 rounded-xl border border-skino-line bg-white px-5 text-xs hover:border-skino-orange hover:text-skino-orange-dark" type="button" @click="retake">ပြန်ရိုက်မယ်</button>
-            <label class="grid min-h-10 cursor-pointer place-items-center rounded-xl border border-skino-line bg-white px-5 text-xs hover:border-skino-orange hover:text-skino-orange-dark">ဓာတ်ပုံ ရွေးမယ်<input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="user" @change="chooseFile" /></label>
+            <button v-if="loading" class="min-h-10 rounded-xl border border-red-200 bg-white px-5 text-xs font-medium text-red-700" type="button" @click="cancelAnalysis">{{ t('စစ်ဆေးမှု ရပ်မယ်', 'Cancel analysis') }}</button>
+            <button v-if="previewUrl" class="min-h-10 rounded-xl border border-skino-line bg-white px-5 text-xs hover:border-skino-orange hover:text-skino-orange-dark" type="button" @click="retake">{{ t('ပြန်ရိုက်မယ်', 'Retake') }}</button>
+            <label class="grid min-h-10 cursor-pointer place-items-center rounded-xl border border-skino-line bg-white px-5 text-xs hover:border-skino-orange hover:text-skino-orange-dark">{{ t('ဓာတ်ပုံ ရွေးမယ်', 'Choose photo') }}<input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="user" @change="chooseFile" /></label>
           </div>
         </div>
-
-        <aside class="grid min-h-0 content-start gap-2.5 rounded-2xl border border-skino-line bg-white p-4 shadow-skino-sm lg:overflow-y-auto">
-          <div><p class="mb-1 text-[10px] text-skino-orange-dark">စကင် လမ်းညွှန်</p><h2 class="text-base font-medium">ပုံကြည်လင်စေရန် စစ်ဆေးပါ</h2></div>
-          <div v-for="item in [['၁','မျက်နှာတစ်ခုတည်း','ညှိကွက်အတွင်း လူတစ်ယောက်တည်းထားပါ။'],['၂','အလယ်တွင် တည့်တည့်','မျက်နှာတစ်ခုလုံး မြင်ရပြီး ခေါင်းမစောင်းပါစေနှင့်။'],['၃','အလင်းရောင်ညီညာ','အရိပ်ပြင်းခြင်းနှင့် filter များကို ရှောင်ပါ။']]" :key="item[0]" class="grid grid-cols-[30px_1fr] gap-2 rounded-xl bg-skino-paper p-2.5"><span class="grid size-7 place-items-center rounded-full bg-white text-[10px] text-skino-orange">{{ item[0] }}</span><span class="grid gap-0.5"><strong class="text-[11px] font-medium">{{ item[1] }}</strong><small class="text-[9px] leading-4 text-skino-muted">{{ item[2] }}</small></span></div>
-          <div class="grid gap-1 rounded-xl border border-violet-200 bg-violet-50 p-3"><strong class="text-[12px] font-medium text-violet-800">Three-frame median analysis</strong><small class="text-[11px] leading-5 text-skino-muted">ပုံ ၃ ပုံလုံးကို AI ဖြင့် စစ်ပြီး zone နှင့် signal တစ်ခုချင်း၏ အလယ်တန်ဖိုးကို အသုံးပြုပါမည်။ ကင်မရာကွာခြားမှုနှင့် frame တစ်ခုတည်း၏ noise ကို လျှော့ချပေးသည်။</small></div>
-          <label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 p-3"><span class="grid gap-0.5"><strong class="text-[11px] font-medium text-sky-900">Developer zone overlay</strong><small class="text-[9px] leading-4 text-skino-muted">Mask နေရာနှင့် zone score ကို ပုံပေါ်တွင်ပြမည်</small></span><input v-model="developerOverlay" class="size-4 accent-sky-600" type="checkbox" /></label>
-          <div class="grid gap-1 rounded-xl border border-emerald-200 bg-emerald-50 p-3"><strong class="text-[11px] font-medium">သင့်အချက်အလက်ကို ကာကွယ်ထားသည်</strong><small class="text-[10px] leading-4 text-skino-muted">ကင်မရာလမ်းညွှန်ကို ဝဘ်ဘရောက်ဇာအတွင်းတွင်သာ လုပ်ဆောင်သည်။</small></div>
-          <button v-if="loading" class="mt-1 min-h-11 w-full rounded-xl border border-red-200 bg-white px-4 text-xs font-medium text-red-700" type="button" @click="cancelAnalysis">စစ်ဆေးမှု ရပ်မယ်</button><button v-else class="mt-1 hidden min-h-12 w-full rounded-xl bg-skino-orange px-4 text-xs font-medium text-white shadow-skino-sm hover:bg-skino-orange-dark disabled:cursor-not-allowed disabled:opacity-40 lg:block" type="button" :disabled="!canAnalyze || !online" @click="submitScan">{{ !online ? 'အင်တာနက်ချိတ်ဆက်ပြီး ပြန်စမ်းပါ' : scanFailure && canAnalyze ? 'ဓာတ်ပုံမပျောက်ဘဲ ပြန်စမ်းမယ် →' : canAnalyze ? 'အသားအရေ ရလဒ်ကြည့်မယ် →' : 'မှန်ကန်သော ဓာတ်ပုံ အရင်ရိုက်ပါ' }}</button>
-        </aside>
       </div>
     </section>
 
@@ -1180,12 +1228,12 @@ onUnmounted(() => {
 
       <article class="grid gap-3 overflow-hidden rounded-3xl border border-skino-line-orange bg-[#fffaf5] p-3 shadow-skino sm:grid-cols-[180px_1fr] sm:p-4">
         <div class="grid min-h-40 place-items-center content-center rounded-2xl bg-[linear-gradient(145deg,#f36a16,#d9540a)] text-white shadow-[0_16px_34px_rgba(217,84,10,.2)]"><div class="grid size-28 place-items-center content-center rounded-full border-[8px] border-white/25 bg-white/10"><strong class="text-4xl font-medium text-white">{{ latestResult.skin_health_score }}</strong><small class="mt-1 text-[10px] text-white/85">အသားအရေ အမှတ်</small></div></div>
-        <div class="grid content-center gap-3 rounded-2xl bg-white p-3 sm:p-4"><div><small class="text-[10px] text-[#786c64]">အသားအရေ အမျိုးအစား</small><h2 class="mt-1 text-xl font-medium text-[#30231d]">{{ skinTypeMy(latestResult.skin_type) }}</h2><p class="mb-0 mt-1 text-[11px] text-[#786c64]">ရလဒ်ယုံကြည်မှု {{ Math.round((latestResult.skin_type_confidence || 0) * 100) }}% · ပုံအရည်အသွေးအပေါ် မူတည်ပါသည်</p></div><div class="grid grid-cols-3 gap-2"><div class="rounded-xl bg-[#eaf7f1] p-3 text-[#165c4b]"><small class="text-[9px] text-[#397667]">ဝက်ခြံ</small><strong class="mt-1 block text-xs font-medium sm:text-sm">{{ severityMy(latestResult.acne_severity) }}</strong></div><div class="rounded-xl bg-[#f3efff] p-3 text-[#604a9b]"><small class="text-[9px] text-[#7867a4]">တွေ့ရှိချက်</small><strong class="mt-1 block text-xs font-medium sm:text-sm">{{ latestResult.concerns?.length || 0 }} ခု</strong></div><div class="rounded-xl bg-[#fff3df] p-3 text-[#8a5a16]"><small class="text-[9px] text-[#98733b]">ပုံအရည်အသွေး</small><strong class="mt-1 block text-xs font-medium sm:text-sm">{{ latestResult.scan_quality?.level === 'good' ? 'ကောင်း' : latestResult.scan_quality?.level === 'medium' ? 'အသင့်အတင့်' : 'နိမ့်' }}</strong></div></div></div>
+        <div class="grid content-center gap-3 rounded-2xl bg-white p-3 sm:p-4"><div><small class="text-[10px] text-[#786c64]">{{ t('အသားအရေ အမျိုးအစား', 'Skin type') }}</small><h2 class="mt-1 text-xl font-medium text-[#30231d]">{{ skinTypeLabel(latestResult.skin_type) }}</h2><p class="mb-0 mt-1 text-[11px] text-[#786c64]">{{ t(`ရလဒ်ယုံကြည်မှု ${Math.round((latestResult.skin_type_confidence || 0) * 100)}% · ပုံအရည်အသွေးအပေါ် မူတည်ပါသည်`, `${Math.round((latestResult.skin_type_confidence || 0) * 100)}% result confidence · depends on image quality`) }}</p></div><div class="grid grid-cols-3 gap-2"><div class="rounded-xl bg-[#eaf7f1] p-3 text-[#165c4b]"><small class="text-[9px] text-[#397667]">{{ t('ဝက်ခြံ', 'Acne') }}</small><strong class="mt-1 block text-xs font-medium sm:text-sm">{{ severityLabel(latestResult.acne_severity) }}</strong></div><div class="rounded-xl bg-[#f3efff] p-3 text-[#604a9b]"><small class="text-[9px] text-[#7867a4]">{{ t('တွေ့ရှိချက်', 'Signals') }}</small><strong class="mt-1 block text-xs font-medium sm:text-sm">{{ latestResult.concerns?.length || 0 }} {{ t('ခု', '') }}</strong></div><div class="rounded-xl bg-[#fff3df] p-3 text-[#8a5a16]"><small class="text-[9px] text-[#98733b]">{{ t('ပုံအရည်အသွေး', 'Image quality') }}</small><strong class="mt-1 block text-xs font-medium sm:text-sm">{{ latestResult.scan_quality?.level === 'good' ? t('ကောင်း', 'Good') : latestResult.scan_quality?.level === 'medium' ? t('အသင့်အတင့်', 'Medium') : t('နိမ့်', 'Low') }}</strong></div></div></div>
       </article>
 
       <article class="rounded-2xl border border-skino-line bg-white p-4 text-[#30231d] shadow-skino-sm sm:p-5">
         <div class="mb-4"><p class="mb-1 text-[10px] text-skino-orange-dark">မြင်နိုင်သော အသားအရေ အချက်များ</p><h2 class="text-base font-medium">Skino တွေ့ရှိထားသော အခြေအနေ</h2></div>
-        <div v-if="latestResult.concerns?.length" class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"><div v-for="concern in latestResult.concerns" :key="concern.name" class="grid min-h-24 grid-cols-[1fr_auto] content-center gap-2 rounded-2xl border border-black/5 p-3.5" :style="{ backgroundColor: concernPalette(concern.name).background, color: concernPalette(concern.name).color }"><span class="grid gap-1"><strong class="text-xs font-medium">{{ concernMy(concern.name) }}</strong><small class="text-[9px] opacity-75">{{ severityMy(concern.severity) }}</small></span><b class="rounded-full bg-white/75 px-2 py-1 text-xs font-medium">{{ Math.round((concern.confidence || 0) * 100) }}%</b><span class="col-span-2 h-1.5 overflow-hidden rounded-full bg-white/80"><i class="block h-full rounded-full" :style="{ width: metricPercent(concern.confidence), backgroundColor: concernPalette(concern.name).bar }"></i></span></div></div>
+        <div v-if="latestResult.concerns?.length" class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"><div v-for="concern in latestResult.concerns" :key="concern.name" class="grid min-h-24 grid-cols-[1fr_auto] content-center gap-2 rounded-2xl border border-black/5 p-3.5" :style="{ backgroundColor: concernPalette(concern.name).background, color: concernPalette(concern.name).color }"><span class="grid gap-1"><strong class="text-xs font-medium">{{ concernLabel(concern.name) }}</strong><small class="text-[9px] opacity-75">{{ severityLabel(concern.severity) }}</small></span><b class="rounded-full bg-white/75 px-2 py-1 text-xs font-medium">{{ Math.round((concern.confidence || 0) * 100) }}%</b><span class="col-span-2 h-1.5 overflow-hidden rounded-full bg-white/80"><i class="block h-full rounded-full" :style="{ width: metricPercent(concern.confidence), backgroundColor: concernPalette(concern.name).bar }"></i></span></div></div>
         <div v-else class="rounded-xl bg-emerald-50 p-4 text-xs leading-5 text-skino-green">ထင်ရှားသော အသားအရေပြဿနာ မတွေ့ရှိပါ။ အသေးစိတ်ကို မျက်နှာ အသားအရေမြေပုံတွင် ကြည့်နိုင်သည်။</div>
       </article>
 
@@ -1195,7 +1243,7 @@ onUnmounted(() => {
           <div v-if="developerOverlay && previewUrl && zoneOverlayPolygons.length" class="relative mx-auto mb-2 aspect-square w-full max-w-md overflow-hidden rounded-2xl bg-[#111816]"><img class="absolute inset-0 size-full object-contain" :src="previewUrl" alt="Zone developer preview" /><svg class="pointer-events-none absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none"><g v-for="zone in zoneOverlayPolygons" :key="zone.key"><polygon :points="zone.points" :fill="`${zone.color}38`" :stroke="zone.color" stroke-width="0.7" vector-effect="non-scaling-stroke" /><text :x="zone.x" :y="zone.y" fill="white" font-size="2.4" font-weight="700" text-anchor="middle" paint-order="stroke" stroke="#111" stroke-width="0.45">{{ zone.key }}{{ zone.signal ? ` · ${zone.signal.score}` : '' }}</text></g></svg></div>
           <template v-if="latestResult.skin_zones?.length">
             <div v-for="zone in latestResult.skin_zones" :key="zone.key" class="overflow-hidden rounded-xl border border-skino-line bg-skino-paper">
-              <button class="flex w-full items-center gap-3 p-3 text-left" type="button" @click="activeZoneKey = activeZoneKey === zone.key ? '' : zone.key"><span class="grid size-10 place-items-center rounded-xl bg-white text-xs font-medium" :class="zone.score >= 70 ? 'text-skino-green' : 'text-skino-orange-dark'">{{ zone.score }}</span><span class="grid flex-1 gap-1"><strong class="text-xs font-medium">{{ zoneNameMy(zone) }}</strong><small class="text-[9px] text-skino-muted">{{ zone.concerns?.length ? zone.concerns.map((item) => concernMy(item.name)).join('၊ ') : 'ထင်ရှားသော အချက် မရှိပါ' }}</small></span><span class="text-xs text-skino-muted">{{ activeZoneKey === zone.key ? 'ပိတ်မယ်' : 'အသေးစိတ်' }}</span></button>
+              <button class="flex w-full items-center gap-3 p-3 text-left" type="button" @click="activeZoneKey = activeZoneKey === zone.key ? '' : zone.key"><span class="grid size-10 place-items-center rounded-xl bg-white text-xs font-medium" :class="zone.score >= 70 ? 'text-skino-green' : 'text-skino-orange-dark'">{{ zone.score }}</span><span class="grid flex-1 gap-1"><strong class="text-xs font-medium">{{ zoneNameLabel(zone) }}</strong><small class="text-[9px] text-skino-muted">{{ zone.concerns?.length ? zone.concerns.map((item) => concernLabel(item.name)).join(isMyanmar ? '၊ ' : ', ') : t('ထင်ရှားသော အချက် မရှိပါ', 'No strong visible signal') }}</small></span><span class="text-xs text-skino-muted">{{ activeZoneKey === zone.key ? t('ပိတ်မယ်', 'Close') : t('အသေးစိတ်', 'Details') }}</span></button>
               <div v-if="activeZoneKey === zone.key" class="grid gap-2 border-t border-skino-line bg-white p-3"><div v-for="metric in [['အဆီပြန်မှု',zone.oiliness,'#f36a16'],['အမည်းစက်',zone.dark_spots,'#8e6deb'],['နီမြန်းမှု',zone.redness,'#e95d48'],['မညီညာမှု',zone.texture,'#0e5c56'],['ခြောက်သွေ့မှု',zone.dryness,'#7a8f72']]" :key="metric[0]" class="grid grid-cols-[74px_1fr_34px] items-center gap-2 text-[9px] text-skino-muted"><span>{{ metric[0] }}</span><span class="h-1.5 overflow-hidden rounded-full bg-skino-line"><i class="block h-full rounded-full" :style="{ width: metricPercent(metric[1]), backgroundColor: metric[2] }"></i></span><b class="text-right font-medium">{{ metricPercent(metric[1]) }}</b></div></div>
             </div>
           </template>
@@ -1275,13 +1323,31 @@ onUnmounted(() => {
       </form>
     </section>
 
-    <section v-else-if="activeView === 'history'" class="workspace-view mx-auto mt-5 grid max-w-6xl gap-4 sm:mt-6">
-      <div class="flex items-center justify-between gap-4 border-b border-skino-line pb-4"><div><button class="mb-2 text-[11px] text-skino-orange-dark transition hover:-translate-x-0.5" type="button" @click="openView('home')">‹ Modules</button><p class="text-[10px] font-medium uppercase tracking-[.14em] text-skino-orange-dark">Scan history</p><h1 class="mt-1 text-2xl font-medium tracking-[-.025em] sm:text-3xl">Saved skin results</h1><p class="mt-1 text-xs text-skino-muted">Review progress and revisit any previous scan.</p></div><img class="size-16 object-contain sm:size-20" :src="progressIcon" alt="" /></div>
-      <div v-if="history.length" class="grid gap-3 lg:grid-cols-2"><article v-for="item in history" :key="item.id" class="grid grid-cols-[64px_1fr] items-center gap-3 rounded-xl border border-skino-line bg-white p-4 shadow-skino-sm sm:grid-cols-[70px_1fr_auto]"><div class="grid size-16 place-items-center content-center rounded-full bg-skino-orange text-white"><strong class="text-2xl font-medium">{{ item.skin_health_score }}</strong><small class="text-[9px] text-white/70">Score</small></div><div class="grid gap-0.5"><span class="text-[10px] text-skino-muted">{{ formatDate(item.created_at) }}</span><h2 class="text-sm font-medium capitalize">{{ item.skin_type }} skin</h2><p class="text-[10px] text-skino-muted">{{ item.acne_severity }} acne · {{ item.concerns?.length || 0 }} concerns</p></div><div class="col-span-2 grid grid-cols-2 gap-1 sm:col-span-1 sm:grid-cols-1"><button class="min-h-8 rounded border border-skino-line px-2 text-[10px]" type="button" @click="viewHistoryItem(item)">View result</button><button class="min-h-8 rounded border border-red-100 px-2 text-[10px] text-red-700" type="button" @click="removeHistoryItem(item)">Delete</button></div></article></div>
-      <div v-else class="flex min-h-56 flex-col items-start justify-center gap-5 rounded-xl border border-dashed border-skino-line-orange bg-skino-paper p-6 sm:flex-row sm:items-center"><img class="size-24 object-contain" :src="historyIcon" alt="" /><div><h2 class="text-xl font-medium">No saved scans yet.</h2><p class="my-2 text-xs text-skino-muted">Your first authenticated scan will appear here automatically.</p><button class="min-h-10 rounded-lg bg-skino-orange px-4 text-xs font-medium text-white" type="button" @click="openView('scan')">Start a scan →</button></div></div>
+    <section v-else-if="activeView === 'history'" class="workspace-view history-view mx-auto mt-5 grid max-w-6xl gap-5 sm:mt-6">
+      <div class="history-heading"><div><button type="button" @click="openView('home')">‹ {{ t('ပင်မ', 'Dashboard') }}</button><span>{{ t('တိုးတက်မှု မှတ်တမ်း', 'Progress journal') }}</span><h1>{{ t('သင့်စကင်မှတ်တမ်း', 'Your scan history') }}</h1><p>{{ t('ရလဒ်ဟောင်းများကို နှိုင်းယှဉ်ပြီး အသားအရေပြောင်းလဲမှုကို အချိန်နှင့်အမျှ ကြည့်ပါ။', 'Compare previous results and understand how your visible skin signals change over time.') }}</p></div><div class="history-heading-art"><img :src="progressIcon" alt="" /><span>{{ history.length }}</span><small>{{ t('စကင်', 'scans') }}</small></div></div>
+
+      <template v-if="history.length">
+        <div class="history-summary-grid">
+          <article><span class="history-summary-icon orange">◎</span><div><small>{{ t('နောက်ဆုံးအမှတ်', 'Latest score') }}</small><strong>{{ historySummary.latest }}<i>/100</i></strong><p>{{ formatDate(history[0]?.created_at) }}</p></div></article>
+          <article><span class="history-summary-icon green">↗</span><div><small>{{ t('နောက်ဆုံးစကင်နှင့် နှိုင်းယှဉ်မှု', 'Since previous scan') }}</small><strong :class="historySummary.delta > 0 ? 'text-skino-green' : historySummary.delta < 0 ? 'text-red-600' : 'text-skino-ink'">{{ historySummary.delta > 0 ? '+' : '' }}{{ historySummary.delta }}</strong><p>{{ history.length > 1 ? t('အမှတ် ပြောင်းလဲမှု', 'score change') : t('နှိုင်းယှဉ်ရန် စကင်ထပ်လိုသည်', 'one more scan to compare') }}</p></div></article>
+          <article><span class="history-summary-icon violet">◷</span><div><small>{{ t('ပျမ်းမျှအမှတ်', 'Average score') }}</small><strong>{{ historySummary.average }}</strong><p>{{ t(`စကင် ${history.length} ခုအပေါ် မူတည်သည်`, `across ${history.length} saved scans`) }}</p></div></article>
+        </div>
+
+        <div class="history-content-grid">
+          <aside class="history-latest-card"><span>{{ t('နောက်ဆုံးရလဒ်', 'Latest result') }}</span><div class="history-latest-score"><strong>{{ history[0].skin_health_score }}</strong><small>/100</small></div><h2>{{ skinTypeLabel(history[0].skin_type) }}</h2><p>{{ t('ဝက်ခြံ', 'Acne') }} · {{ severityLabel(history[0].acne_severity) }}</p><div><span v-for="concern in (history[0].concerns || []).slice(0, 3)" :key="concern.name">{{ concernLabel(concern.name) }}</span><span v-if="!history[0].concerns?.length">{{ t('ထင်ရှားသောအချက် မရှိပါ', 'No strong visible signals') }}</span></div><button type="button" @click="viewHistoryItem(history[0])">{{ t('ရလဒ်အပြည့်အစုံ ကြည့်မယ်', 'View full result') }} →</button><small>{{ t('စကင်ရလဒ်သည် wellness guidance သာဖြစ်သည်။', 'Results provide wellness guidance, not a diagnosis.') }}</small></aside>
+
+          <div class="history-timeline"><div class="history-list-heading"><div><span>{{ t('စကင်အားလုံး', 'All scans') }}</span><h2>{{ t('အချိန်လိုက် မှတ်တမ်း', 'Results over time') }}</h2></div><button type="button" @click="openView('scan')">＋ {{ t('စကင်အသစ်', 'New scan') }}</button></div>
+            <article v-for="(item, index) in history" :key="item.id" class="history-timeline-item">
+              <div class="history-timeline-marker"><i></i><span>{{ index + 1 }}</span></div>
+              <div class="history-timeline-card"><div class="history-score-badge" :class="item.skin_health_score >= 70 ? 'good' : item.skin_health_score >= 50 ? 'medium' : 'low'"><strong>{{ item.skin_health_score }}</strong><small>{{ t('အမှတ်', 'score') }}</small></div><div class="history-item-copy"><span>{{ formatDate(item.created_at) }}<b v-if="index === 0">{{ t('နောက်ဆုံး', 'Latest') }}</b></span><h3>{{ skinTypeLabel(item.skin_type) }}</h3><p>{{ t('ဝက်ခြံ', 'Acne') }} · {{ severityLabel(item.acne_severity) }} <i>•</i> {{ item.concerns?.length || 0 }} {{ t('တွေ့ရှိချက်', 'signals') }}</p><div><span v-for="concern in (item.concerns || []).slice(0, 3)" :key="concern.name">{{ concernLabel(concern.name) }}</span></div></div><div class="history-item-actions"><button type="button" @click="viewHistoryItem(item)">{{ t('ကြည့်မယ်', 'View') }} <span>→</span></button><button type="button" :aria-label="t('စကင်မှတ်တမ်း ဖျက်ရန်', 'Delete saved scan')" @click="removeHistoryItem(item)">⌫</button></div></div>
+            </article>
+          </div>
+        </div>
+      </template>
+      <div v-else class="history-empty"><div><img :src="historyIcon" alt="" /><span>＋</span></div><section><small>{{ t('သင့်မှတ်တမ်း စတင်ရန်', 'Start your progress journal') }}</small><h2>{{ t('သိမ်းထားသော စကင် မရှိသေးပါ။', 'No saved scans yet.') }}</h2><p>{{ t('ပထမဆုံးစကင်ပြီးသည်နှင့် ရလဒ်နှင့် အချိန်လိုက်ပြောင်းလဲမှုကို ဤနေရာတွင် ကြည့်နိုင်ပါမည်။', 'Your first completed scan will appear here automatically, ready for future comparison.') }}</p><button type="button" @click="openView('scan')">{{ t('ပထမဆုံးစကင် စမယ်', 'Start your first scan') }} →</button></section></div>
     </section>
 
-    <nav class="workspace-mobile-nav" aria-label="Workspace navigation"><button type="button" :class="{ active: activeView === 'home' }" @click="openView('home')"><span>⌂</span>ပင်မ</button><button type="button" :class="{ active: ['scan','result'].includes(activeView) }" @click="openView('scan')"><span>◎</span>စကင်</button><button type="button" :class="{ active: activeView === 'routine' }" @click="openView('routine')"><span>✓</span>Routine</button><button type="button" :class="{ active: activeView === 'history' }" @click="openView('history')"><span>◷</span>မှတ်တမ်း</button><button type="button" :class="{ active: activeView === 'profile' }" @click="openView('profile')"><span>○</span>Profile</button></nav>
+    <nav class="workspace-mobile-nav" :aria-label="t('အလုပ်နေရာ လမ်းညွှန်', 'Workspace navigation')"><button type="button" :class="{ active: activeView === 'home' }" @click="openView('home')"><span>⌂</span>{{ t('ပင်မ', 'Home') }}</button><button type="button" :class="{ active: ['scan','result'].includes(activeView) }" @click="openView('scan')"><span>◎</span>{{ t('စကင်', 'Scan') }}</button><button type="button" :class="{ active: activeView === 'routine' }" @click="openView('routine')"><span>✓</span>{{ t('Routine', 'Routine') }}</button><button type="button" :class="{ active: activeView === 'history' }" @click="openView('history')"><span>◷</span>{{ t('မှတ်တမ်း', 'History') }}</button><button type="button" :class="{ active: activeView === 'profile' }" @click="openView('profile')"><span>○</span>{{ t('Profile', 'Profile') }}</button></nav>
 
   </main>
 </template>
