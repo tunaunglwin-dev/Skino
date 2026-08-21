@@ -1,8 +1,10 @@
 const DEFAULT_API_URL = 'http://127.0.0.1:8000/api'
+const PRODUCTION_API_URL = 'https://skino-skin-analysis.onrender.com/api'
+const PRODUCTION_GOOGLE_CLIENT_ID = '148577531434-p1e2ued43tb5dhe5tkptpaa4g23uvipk.apps.googleusercontent.com'
 const SESSION_KEY = 'skino.web.auth.session'
 
-export const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_URL).replace(/\/$/, '')
-export const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+export const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? PRODUCTION_API_URL : DEFAULT_API_URL)).replace(/\/$/, '')
+export const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || (import.meta.env.PROD ? PRODUCTION_GOOGLE_CLIENT_ID : '')
 
 function validationMessage(payload, fallback) {
   const errors = payload?.errors

@@ -23,6 +23,8 @@ npm run dev
 
 Set `VITE_GOOGLE_CLIENT_ID` in `.env` to the same Google web client ID allowed by Laravel's `GOOGLE_CLIENT_ID`. Restart Vite after changing `.env`.
 
+Production environment variables still take priority. For hackathon resilience, a production build without Vercel variables falls back to the public Skino Render API URL and public Google OAuth web client ID defined in `src/services/skinoApi.js`; local development continues to use localhost.
+
 Open:
 
 ```text

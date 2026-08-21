@@ -65,6 +65,9 @@ const captureProgress = ref(0)
 const captureQualityScore = ref(0)
 const captureMode = ref('single_upload')
 const capturingFrames = ref(false)
+const analysisProgress = ref(0)
+const analysisStageIndex = ref(0)
+const retryingSection = ref('')
 const skinMapOpen = ref(false)
 const activeZoneKey = ref('')
 const selectedRoutineDate = ref(new Date().toISOString().slice(0, 10))
@@ -81,11 +84,26 @@ const appointmentForm = ref({
 })
 
 let analysisController = null
+let analysisProgressTimer = null
+
+const analysisStages = [
+  { title: 'ပုံကို လုံခြုံစွာ ပြင်ဆင်နေသည်', detail: 'Preparing your selected frame' },
+  { title: 'ပုံအရည်အသွေး စစ်ဆေးနေသည်', detail: 'Checking lighting, clarity and face position' },
+  { title: 'အသားအရေ အချက်များကို ခွဲခြမ်းနေသည်', detail: 'Analyzing visible skin signals and zones' },
+  { title: 'ရလဒ်နှင့် routine ကို ပြင်ဆင်နေသည်', detail: 'Building your clear result and care guidance' },
+]
 
 const user = computed(() => profile.value || props.session.user || {})
 const token = computed(() => props.session.token)
 const latestResult = computed(() => result.value || history.value[0] || null)
 const selectedAppointmentScan = computed(() => history.value.find((item) => String(item.id) === appointmentScanId.value) || latestResult.value)
+const currentAnalysisStage = computed(() => analysisStages[analysisStageIndex.value] || analysisStages[0])
+const operationLabel = computed(() => {
+  if (activeView.value === 'routine') return 'Routine ကို လုံခြုံစွာ သိမ်းနေသည်…'
+  if (activeView.value === 'history') return 'Scan history ကို ပြင်ဆင်နေသည်…'
+  if (activeView.value === 'result') return 'Care plan ကို ပြင်ဆင်နေသည်…'
+  return 'အချက်အလက်ကို သိမ်းနေသည်…'
+})
 const cameraSupported = computed(() => Boolean(navigator.mediaDevices?.getUserMedia))
 function routineTaskFromStep(step, index) {
   const value = String(step || '').trim()
@@ -206,6 +224,8 @@ async function loadWorkspace() {
 }
 
 async function retryWorkspaceSection(section) {
+  if (retryingSection.value) return
+  retryingSection.value = section
   loadErrors.value = { ...loadErrors.value, [section]: '' }
   try {
     if (section === 'history') history.value = await fetchScanHistory(token.value)
@@ -213,6 +233,8 @@ async function retryWorkspaceSection(section) {
     if (section === 'profile') setProfile(await fetchProfile(token.value))
   } catch (retryError) {
     loadErrors.value = { ...loadErrors.value, [section]: retryError.message }
+  } finally {
+    retryingSection.value = ''
   }
 }
 
@@ -774,6 +796,25 @@ function deviceCategory() {
   return 'desktop'
 }
 
+function stopAnalysisProgress() {
+  window.clearInterval(analysisProgressTimer)
+  analysisProgressTimer = null
+}
+
+function startAnalysisProgress() {
+  stopAnalysisProgress()
+  analysisProgress.value = 7
+  analysisStageIndex.value = 0
+  const startedAt = Date.now()
+  analysisProgressTimer = window.setInterval(() => {
+    const elapsed = Date.now() - startedAt
+    const ceiling = elapsed < 2500 ? 30 : elapsed < 7000 ? 58 : elapsed < 15000 ? 78 : 92
+    const step = analysisProgress.value < 45 ? 3 : analysisProgress.value < 75 ? 2 : 1
+    analysisProgress.value = Math.min(ceiling, analysisProgress.value + step)
+    analysisStageIndex.value = analysisProgress.value >= 78 ? 3 : analysisProgress.value >= 50 ? 2 : analysisProgress.value >= 24 ? 1 : 0
+  }, 520)
+}
+
 async function submitScan() {
   if (!canAnalyze.value || !online.value) return
   analysisController?.abort()
@@ -782,6 +823,7 @@ async function submitScan() {
   scanFailure.value = ''
   error.value = ''
   notice.value = 'ပုံအရည်အသွေးနှင့် မြင်နိုင်သော အသားအရေအချက်များကို စစ်ဆေးနေသည်…'
+  startAnalysisProgress()
   try {
     result.value = await analyzeSkin(token.value, capturedFile.value, localTrainingConsent.value, {
       mode: captureMode.value,
@@ -790,17 +832,23 @@ async function submitScan() {
       deviceCategory: deviceCategory(),
       landmarks: latestFaceLandmarks.value,
     }, analysisController.signal)
+    stopAnalysisProgress()
+    analysisStageIndex.value = analysisStages.length - 1
+    analysisProgress.value = 100
+    await new Promise((resolve) => window.setTimeout(resolve, 260))
     history.value = [result.value, ...history.value.filter((item) => item.id !== result.value.id)]
     activeView.value = 'result'
     notice.value = ''
     window.scrollTo({ top: 0 })
   } catch (scanError) {
+    stopAnalysisProgress()
     if (scanError.code !== 'CANCELLED') {
       scanFailure.value = scanError.message
       error.value = scanError.message
     }
     notice.value = ''
   } finally {
+    stopAnalysisProgress()
     loading.value = false
     analysisController = null
   }
@@ -808,6 +856,7 @@ async function submitScan() {
 
 function cancelAnalysis() {
   analysisController?.abort()
+  stopAnalysisProgress()
   notice.value = 'စစ်ဆေးမှုကို ရပ်လိုက်ပါပြီ။ ရွေးထားသောဓာတ်ပုံကို မဖျက်ထားပါ။'
 }
 
@@ -894,6 +943,7 @@ onMounted(() => {
 })
 onUnmounted(() => {
   analysisController?.abort()
+  stopAnalysisProgress()
   window.removeEventListener('online', syncOnlineState)
   window.removeEventListener('offline', syncOnlineState)
   stopCamera()
@@ -903,18 +953,18 @@ onUnmounted(() => {
 
 <template>
   <main class="workspace-shell min-h-screen bg-[radial-gradient(circle_at_top_right,rgba(243,106,22,.07),transparent_30%)] bg-skino-cream px-3 pt-2 text-skino-ink sm:px-5 lg:px-8" :class="activeView === 'scan' ? 'pb-1 lg:h-screen lg:overflow-hidden' : 'pb-12'">
-    <header class="sticky top-2 z-30 mx-auto grid min-h-[70px] max-w-7xl grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-skino-line bg-white/90 px-3 shadow-skino backdrop-blur-xl md:grid-cols-[1fr_auto_1fr] sm:px-4">
-      <button class="flex items-center gap-3 text-left" type="button" @click="openView('home')">
+    <header class="workspace-topbar sticky top-2 z-30 mx-auto grid min-h-[70px] max-w-7xl grid-cols-[1fr_auto] items-center gap-3 rounded-[22px] border border-skino-line bg-white/90 px-3 shadow-skino backdrop-blur-xl md:grid-cols-[1fr_auto_1fr] sm:px-4">
+      <button class="workspace-brand flex min-w-0 items-center gap-3 text-left" type="button" @click="openView('home')">
         <img class="size-11 rounded-xl border border-skino-line-orange bg-white object-cover shadow-skino-sm" :src="logo" alt="" />
         <span class="grid leading-tight"><strong class="text-sm font-medium">Skino</strong><small class="mt-0.5 text-[10px] text-skino-muted">ကိုယ်ပိုင် အသားအရေ အလုပ်နေရာ</small></span>
       </button>
 
       <div class="hidden items-center gap-2 rounded-full border border-skino-line bg-white px-4 py-2 text-[11px] text-skino-muted shadow-skino-sm md:flex"><span class="size-2 rounded-full bg-emerald-500"></span><span>အလုပ်နေရာ</span><b class="font-medium text-skino-ink">/ {{ currentViewTitle }}</b></div>
 
-      <div class="flex items-center gap-2 justify-self-end">
-        <button class="group flex min-h-10 items-center gap-2 rounded-full border border-skino-line-orange bg-white px-3 text-[10px] text-skino-orange-dark shadow-skino-sm transition hover:-translate-y-0.5 hover:border-skino-orange hover:bg-skino-orange-soft" type="button" @click="pricingOpen = true"><span class="grid size-6 place-items-center rounded-full bg-skino-orange-soft text-[11px] transition group-hover:bg-white">✦</span><span class="hidden sm:inline">Pricing plans</span></button>
+      <div class="workspace-actions flex items-center gap-2 justify-self-end">
+        <button class="workspace-pricing group flex min-h-10 items-center gap-2 rounded-full border border-skino-line-orange bg-white px-3 text-[10px] text-skino-orange-dark shadow-skino-sm transition hover:-translate-y-0.5 hover:border-skino-orange hover:bg-skino-orange-soft" type="button" aria-label="Open pricing plans" @click="pricingOpen = true"><span class="grid size-6 place-items-center rounded-full bg-skino-orange-soft text-[11px] transition group-hover:bg-white">✦</span><span class="hidden sm:inline">Pricing plans</span></button>
         <div class="relative">
-        <button class="flex min-h-11 items-center gap-2 rounded-full border border-skino-line-orange bg-skino-paper p-1.5 pr-3 text-left shadow-skino-sm transition hover:-translate-y-0.5 hover:border-skino-orange" type="button" :aria-expanded="profileOpen" @click="profileOpen = !profileOpen">
+        <button class="workspace-profile-trigger flex min-h-11 items-center gap-2 rounded-full border border-skino-line-orange bg-skino-paper p-1.5 pr-3 text-left shadow-skino-sm transition hover:-translate-y-0.5 hover:border-skino-orange" type="button" :aria-expanded="profileOpen" @click="profileOpen = !profileOpen">
           <img v-if="user.avatar_url" class="size-9 rounded-full object-cover" :src="user.avatar_url" alt="" referrerpolicy="no-referrer" />
           <span v-else class="grid size-9 place-items-center rounded-full bg-skino-green text-xs text-white">{{ user.name?.charAt(0) || 'S' }}</span>
           <span class="hidden max-w-32 leading-tight sm:grid"><strong class="truncate text-[11px] font-medium">{{ user.name }}</strong><small class="truncate text-[9px] text-skino-muted">ကိုယ်ရေးအချက်အလက်</small></span><span class="text-xs text-skino-muted">⌄</span>
@@ -937,20 +987,35 @@ onUnmounted(() => {
       </section>
     </div>
 
+    <div v-if="loading && activeView === 'scan'" class="analysis-loading-overlay" role="dialog" aria-modal="true" aria-labelledby="analysis-loading-title" aria-live="polite">
+      <section class="analysis-loading-card">
+        <div class="analysis-loading-top"><span><i></i>Skino AI service</span><b>{{ analysisProgress }}%</b></div>
+        <div class="analysis-loading-body">
+          <div class="analysis-preview"><img v-if="previewUrl" :src="previewUrl" alt="Selected scan preview" /><img v-else :src="cameraMascot" alt="" /><span><i></i><i></i><i></i></span></div>
+          <div class="analysis-loading-copy"><img :src="calmMascot" alt="" /><p>သင့်ရလဒ်ကို ပြင်ဆင်နေပါသည်</p><h2 id="analysis-loading-title">{{ currentAnalysisStage.title }}</h2><span>{{ currentAnalysisStage.detail }}</span><div class="analysis-progress-track" :aria-valuenow="analysisProgress" aria-valuemin="0" aria-valuemax="100" role="progressbar"><i :style="{ width: `${analysisProgress}%` }"></i></div><small>Render service နိုးထရန် အချိန်အနည်းငယ်ကြာနိုင်ပါသည်။ ဤစာမျက်နှာကို မပိတ်ပါနှင့်။</small></div>
+        </div>
+        <div class="analysis-stage-list"><span v-for="(stage, index) in analysisStages" :key="stage.title" :class="{ active: index === analysisStageIndex, complete: index < analysisStageIndex || analysisProgress === 100 }"><i>{{ index < analysisStageIndex || analysisProgress === 100 ? '✓' : index + 1 }}</i><b>{{ stage.title }}</b></span></div>
+        <footer><span><i></i>ဓာတ်ပုံကို မပျောက်စေဘဲ ရပ်ပြီး ပြန်စမ်းနိုင်ပါသည်</span><button type="button" @click="cancelAnalysis">စစ်ဆေးမှု ရပ်မယ်</button></footer>
+      </section>
+    </div>
+
+    <div v-if="loading && activeView !== 'scan'" class="workspace-operation-pill" role="status" aria-live="polite"><i></i><span>{{ operationLabel }}</span></div>
+
     <section v-if="error || notice" class="mx-auto mt-4 flex min-h-11 max-w-6xl items-center justify-between gap-4 rounded-lg border px-4 py-2.5 text-xs" :class="error ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-skino-green'">
       <span>{{ error || notice }}</span><button class="text-lg leading-none" type="button" @click="error = ''; notice = ''">×</button>
     </section>
 
-    <section v-if="Object.values(loadErrors).some(Boolean)" class="mx-auto mt-3 flex max-w-6xl flex-wrap items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><span class="mr-auto">အချို့အချက်အလက်များ မတင်နိုင်သေးပါ။ အပိုင်းတစ်ခုချင်း ပြန်စမ်းနိုင်သည်။</span><button v-if="loadErrors.history" class="rounded-lg border border-amber-300 bg-white px-3 py-2" type="button" @click="retryWorkspaceSection('history')">မှတ်တမ်း ပြန်တင်မယ်</button><button v-if="loadErrors.routine" class="rounded-lg border border-amber-300 bg-white px-3 py-2" type="button" @click="retryWorkspaceSection('routine')">Routine ပြန်တင်မယ်</button><button v-if="loadErrors.profile" class="rounded-lg border border-amber-300 bg-white px-3 py-2" type="button" @click="retryWorkspaceSection('profile')">Profile ပြန်တင်မယ်</button></section>
+    <section v-if="Object.values(loadErrors).some(Boolean)" class="mx-auto mt-3 flex max-w-6xl flex-wrap items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><span class="mr-auto">အချို့အချက်အလက်များ မတင်နိုင်သေးပါ။ အပိုင်းတစ်ခုချင်း ပြန်စမ်းနိုင်သည်။</span><button v-if="loadErrors.history" class="rounded-lg border border-amber-300 bg-white px-3 py-2" type="button" :disabled="Boolean(retryingSection)" @click="retryWorkspaceSection('history')">{{ retryingSection === 'history' ? 'တင်နေသည်…' : 'မှတ်တမ်း ပြန်တင်မယ်' }}</button><button v-if="loadErrors.routine" class="rounded-lg border border-amber-300 bg-white px-3 py-2" type="button" :disabled="Boolean(retryingSection)" @click="retryWorkspaceSection('routine')">{{ retryingSection === 'routine' ? 'တင်နေသည်…' : 'Routine ပြန်တင်မယ်' }}</button><button v-if="loadErrors.profile" class="rounded-lg border border-amber-300 bg-white px-3 py-2" type="button" :disabled="Boolean(retryingSection)" @click="retryWorkspaceSection('profile')">{{ retryingSection === 'profile' ? 'တင်နေသည်…' : 'Profile ပြန်တင်မယ်' }}</button></section>
 
-    <section v-if="pageLoading" class="grid min-h-[75vh] place-items-center content-center gap-3 text-sm text-skino-muted">
-      <img class="size-24 animate-bounce object-contain [animation-duration:2.4s]" :src="calmMascot" alt="" />
-      <p>Preparing your Skino workspace…</p>
+    <section v-if="pageLoading" class="workspace-loading-screen" role="status" aria-live="polite">
+      <div class="workspace-loading-brand"><span><img :src="calmMascot" alt="" /><i></i></span><div><p>Skino Workspace</p><h1>သင့်အသားအရေ အချက်အလက်များကို ပြင်ဆင်နေသည်</h1><small>Loading scan history, routine and private profile…</small></div></div>
+      <div class="workspace-loading-bar"><i></i></div>
+      <div class="workspace-skeleton-grid" aria-hidden="true"><span v-for="index in 5" :key="index"><i></i><b></b><small></small><em></em></span></div>
     </section>
 
-    <section v-else-if="activeView === 'home'" class="workspace-view mx-auto grid max-w-7xl content-start py-8 sm:py-12">
-      <div class="grid grid-cols-2 place-content-center gap-3 sm:gap-4 lg:grid-cols-5">
-        <button v-for="module in workspaceModules" :key="module.key" class="group grid min-h-48 w-full content-start justify-items-center gap-2 rounded-2xl border border-skino-line bg-white p-4 text-center shadow-skino-sm transition last:col-span-2 last:w-[calc(50%_-_6px)] last:justify-self-center hover:-translate-y-1 hover:border-skino-line-orange hover:shadow-skino sm:min-h-52 sm:gap-3 sm:p-5 sm:last:w-[calc(50%_-_8px)] lg:min-h-[224px] lg:last:col-span-1 lg:last:w-full" type="button" :style="{ '--module-accent': module.accent }" @click="openModule(module)">
+    <section v-else-if="activeView === 'home'" class="workspace-view mx-auto grid max-w-7xl content-start py-5 sm:py-8 lg:py-10">
+      <div class="workspace-module-grid grid place-content-center gap-3 sm:gap-4">
+        <button v-for="module in workspaceModules" :key="module.key" class="workspace-module-card group grid w-full content-start justify-items-center gap-2 rounded-2xl border border-skino-line bg-white p-4 text-center shadow-skino-sm transition hover:-translate-y-1 hover:border-skino-line-orange hover:shadow-skino sm:gap-3 sm:p-5" type="button" :style="{ '--module-accent': module.accent }" @click="openModule(module)">
           <span class="grid size-20 place-items-center overflow-hidden rounded-2xl bg-skino-paper p-2 transition group-hover:bg-skino-orange-soft sm:size-24"><img class="size-full object-contain" :src="module.icon" alt="" /></span>
           <strong class="text-sm font-medium sm:text-base">{{ module.title }}</strong>
           <small class="min-h-8 text-[12px] leading-5 text-skino-muted">{{ module.subtitle }}</small>
@@ -978,7 +1043,7 @@ onUnmounted(() => {
 
           <fieldset class="grid gap-2"><legend class="text-xs font-medium">အဓိက skin goals <small class="ml-1 font-normal text-skino-muted">၅ ခုအထိ</small></legend><div class="flex flex-wrap gap-2"><button v-for="goal in skinGoalOptions" :key="goal.value" class="min-h-9 rounded-full border px-3 text-[10px] transition" :class="profileForm.skin_goals.includes(goal.value) ? 'border-skino-orange bg-skino-orange-soft text-skino-orange-dark' : 'border-skino-line bg-white text-skino-muted hover:border-skino-line-orange'" type="button" @click="toggleSkinGoal(goal.value)">{{ profileForm.skin_goals.includes(goal.value) ? '✓ ' : '' }}{{ goal.label }}</button></div></fieldset>
 
-          <button class="min-h-11 rounded-xl bg-skino-orange px-5 text-xs font-medium text-white hover:bg-skino-orange-dark disabled:opacity-40 sm:justify-self-start" type="submit" :disabled="profileSaving || !profileForm.name.trim()">{{ profileSaving ? 'သိမ်းနေသည်…' : 'Profile သိမ်းမယ်' }}</button>
+          <button class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-skino-orange px-5 text-xs font-medium text-white hover:bg-skino-orange-dark disabled:opacity-40 sm:justify-self-start" type="submit" :disabled="profileSaving || !profileForm.name.trim()"><i v-if="profileSaving" class="button-spinner light"></i>{{ profileSaving ? 'သိမ်းနေသည်…' : 'Profile သိမ်းမယ်' }}</button>
         </form>
 
         <aside class="grid content-start gap-4">
@@ -1089,21 +1154,21 @@ onUnmounted(() => {
       <article class="flex flex-col gap-3 rounded-2xl border border-skino-line-orange bg-skino-paper p-4 sm:flex-row sm:items-center sm:p-5"><img class="size-14 object-contain" :src="specialistIcon" alt="" /><div class="flex-1"><h2 class="text-sm font-medium">ကျွမ်းကျင်သူ အကူအညီ လိုပါသလား?</h2><p class="mb-0 mt-1 text-[10px] leading-5 text-skino-muted">နာကျင်ခြင်း၊ မြန်မြန်ပြန့်ခြင်း သို့မဟုတ် မသေချာသော အခြေအနေရှိပါက ကျွမ်းကျင်သူထံ မေးမြန်းပါ။</p></div><button class="min-h-10 rounded-xl bg-skino-orange px-4 text-xs font-medium text-white" type="button" @click="openAppointment(latestResult)">ရက်ချိန်း တောင်းမယ်</button></article>
     </section>
 
-    <section v-else-if="activeView === 'routine'" class="workspace-view mx-auto mt-5 grid max-w-5xl gap-4 sm:mt-7">
-      <div class="flex items-center gap-3 border-b border-skino-line pb-4"><button class="min-h-10 rounded-xl border border-skino-line bg-white px-3 text-[11px] text-skino-muted hover:border-skino-orange" type="button" @click="openView('home')">‹ ပင်မ</button><span class="grid size-11 place-items-center rounded-xl bg-emerald-50"><img class="size-9 object-contain" :src="routineIcon" alt="" /></span><div><p class="mb-0 text-[10px] text-skino-orange-dark">နေ့စဉ် Routine</p><h1 class="text-xl font-medium sm:text-2xl">ဒီနေ့ လုပ်ဆောင်ရမည့် Care စာရင်း</h1></div></div>
+    <section v-else-if="activeView === 'routine'" class="routine-view workspace-view mx-auto mt-4 grid max-w-6xl gap-3 sm:mt-6 sm:gap-4">
+      <div class="workspace-page-heading"><button class="workspace-back" type="button" @click="openView('home')">‹ <span>ပင်မ</span></button><span class="workspace-page-icon"><img :src="routineIcon" alt="" /></span><div class="min-w-0"><p>နေ့စဉ် Routine</p><h1>ဒီနေ့ လုပ်ဆောင်ရမည့် Care စာရင်း</h1></div></div>
 
       <template v-if="routine">
-        <article class="rounded-2xl border border-skino-line bg-white p-3 shadow-skino-sm sm:p-4"><div class="mb-3 flex items-center justify-between gap-3"><div><p class="mb-0 text-[11px] text-skino-orange-dark">ထိန်းသိမ်းမှု ပြက္ခဒိန်</p><h2 class="mt-1 text-sm font-medium">{{ routineCalendarTitle }}</h2></div><div class="flex gap-3 text-[11px] text-skino-muted"><span class="flex items-center gap-1"><i class="size-2 rounded-full bg-skino-green"></i>မနက်</span><span class="flex items-center gap-1"><i class="size-2 rounded-full bg-skino-orange"></i>ည</span></div></div><div class="overflow-x-auto pb-1"><div class="grid min-w-[560px] grid-cols-7 gap-1.5"><div v-for="day in routineCalendarDays" :key="day.date" class="grid min-h-14 place-items-center content-center gap-1 rounded-xl border px-1 text-[11px]" :class="day.is_today ? 'border-skino-orange bg-skino-orange-soft text-skino-orange-dark' : 'border-skino-line bg-skino-paper text-skino-muted'"><span>{{ day.label }}</span><b class="text-xs font-medium">{{ Number(day.date.slice(-2)) }}</b><span class="flex gap-1"><i class="size-1.5 rounded-full" :class="day.morning_done ? 'bg-skino-green' : 'bg-skino-line'"></i><i class="size-1.5 rounded-full" :class="day.night_done ? 'bg-skino-orange' : 'bg-skino-line'"></i></span></div></div></div></article>
+        <article class="routine-calendar rounded-2xl border border-skino-line bg-white p-3 shadow-skino-sm sm:p-4"><div class="routine-calendar-heading"><div><p>ထိန်းသိမ်းမှု ပြက္ခဒိန်</p><h2>{{ routineCalendarTitle }}</h2></div><div class="routine-calendar-legend"><span><i class="bg-skino-green"></i>မနက်</span><span><i class="bg-skino-orange"></i>ည</span></div></div><div class="routine-calendar-scroll" tabindex="0" aria-label="Weekly routine calendar"><div class="routine-calendar-track"><div v-for="day in routineCalendarDays" :key="day.date" class="routine-calendar-day" :class="day.is_today ? 'today' : ''"><span>{{ day.label }}</span><b>{{ Number(day.date.slice(-2)) }}</b><small>{{ day.is_today ? 'ဒီနေ့' : ' ' }}</small><span class="routine-day-status"><i :class="day.morning_done ? 'bg-skino-green' : 'bg-skino-line'"></i><i :class="day.night_done ? 'bg-skino-orange' : 'bg-skino-line'"></i></span></div></div></div></article>
 
-        <article class="grid gap-3 rounded-2xl border border-skino-line bg-white p-3 shadow-skino-sm sm:grid-cols-[1fr_92px] sm:items-center sm:p-4"><div><p class="mb-1 text-[9px] text-skino-orange-dark">ဒီနေ့ Care Plan</p><h2 class="text-base font-medium">သင့်အတွက် နေ့စဉ် အသားအရေထိန်းသိမ်းမှု</h2><p class="mb-0 mt-1 text-[10px] leading-4 text-skino-muted">ပြီးစီးသောအဆင့်ကို ပြန်ဖြုတ်၍ မရပါ။ မနက်နှင့် ည လုပ်စရာများကို ပြီးမှသာ မှတ်သားပါ။</p></div><div class="grid size-20 place-items-center content-center justify-self-center rounded-full border-[7px] border-skino-orange-soft border-r-skino-orange"><strong class="text-xl font-medium text-skino-orange">{{ todayProgress }}%</strong><span class="text-[8px] text-skino-muted">ဒီနေ့</span></div></article>
+        <article class="routine-summary-card"><div><p>ဒီနေ့ Care Plan</p><h2>သင့်အတွက် နေ့စဉ် အသားအရေထိန်းသိမ်းမှု</h2><span>ပြီးစီးသောအဆင့်ကို ပြန်ဖြုတ်၍ မရပါ။ မနက်နှင့် ည လုပ်စရာများကို သေချာပြီးမှ မှတ်သားပါ။</span></div><div class="routine-progress-ring"><strong>{{ todayProgress }}%</strong><small>ဒီနေ့</small></div></article>
 
-        <div class="grid gap-4 lg:grid-cols-2">
-          <article v-for="group in routineTaskGroups" :key="group.key" class="rounded-2xl border border-skino-line bg-white p-3 shadow-skino-sm sm:p-4">
+        <div class="routine-groups grid gap-3 sm:gap-4">
+          <article v-for="group in routineTaskGroups" :key="group.key" class="min-w-0 rounded-2xl border border-skino-line bg-white p-3 shadow-skino-sm sm:p-4">
             <div class="mb-3 flex items-center justify-between gap-3"><div><h2 class="text-sm font-medium">{{ group.title }}</h2><p class="mb-0 mt-1 text-[9px] leading-4 text-skino-muted">{{ group.subtitle }}</p></div><span class="rounded-full px-2.5 py-1 text-[8px]" :class="routine.today?.[`${group.key}_done`] ? 'bg-emerald-50 text-skino-green' : 'bg-skino-orange-soft text-skino-orange-dark'">{{ routine.today?.[`${group.key}_done`] ? 'ပြီးစီးပါပြီ' : 'လုပ်ဆောင်ရန်' }}</span></div>
             <div class="grid gap-1.5"><button v-for="task in group.tasks" :key="task.key" class="routine-task grid min-h-[60px] grid-cols-[40px_1fr_26px] items-center gap-2.5 rounded-xl border p-2 text-left transition" :class="routineTaskDone(group, task) ? 'routine-task-done cursor-default border-emerald-200 bg-emerald-50' : 'border-skino-line bg-skino-paper hover:border-skino-line-orange'" type="button" :disabled="loading || routineTaskDone(group, task)" @click="toggleRoutineTask(group, task)"><span class="grid size-10 place-items-center rounded-lg bg-white"><img class="size-9 object-contain" :src="task.image" alt="" /></span><span class="grid gap-0.5"><strong class="text-[10px] font-medium">{{ task.title }}</strong><small class="text-[8px] leading-3.5 text-skino-muted">{{ task.note }}</small></span><span class="routine-check grid size-6 place-items-center rounded-full border text-[10px]" :class="routineTaskDone(group, task) ? 'border-skino-green bg-skino-green text-white' : 'border-skino-line bg-white text-skino-orange'">{{ routineTaskDone(group, task) ? '✓' : '○' }}</span></button></div>
           </article>
         </div>
-        <div class="flex w-full justify-stretch border-t border-skino-line pt-3 sm:justify-end"><button class="min-h-11 w-full rounded-xl border border-red-200 bg-red-50 px-4 text-[11px] text-red-700 transition hover:border-red-300 hover:bg-red-100 focus-visible:ring-red-200 sm:w-auto" type="button" @click="deactivateRoutine"><span class="mr-1" aria-hidden="true">■</span> နေ့စဉ်အစီအစဉ် ရပ်မယ်</button></div>
+        <div class="routine-stop-row"><p>Routine ကို ရပ်လိုက်လျှင် ယနေ့မပြီးသေးသော task များကို ဆက်မှတ်တမ်းတင်၍ မရတော့ပါ။</p><button type="button" @click="deactivateRoutine"><span aria-hidden="true">■</span> နေ့စဉ်အစီအစဉ် ရပ်မယ်</button></div>
       </template>
 
       <div v-else class="flex min-h-64 flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-skino-line-orange bg-skino-paper p-6 text-center"><img class="size-24 object-contain" :src="routineIcon" alt="" /><div><h2 class="text-lg font-medium">Routine မစတင်ရသေးပါ</h2><p class="my-2 text-xs leading-5 text-skino-muted">စကင်လုပ်ပြီး ရလဒ်အပေါ်မူတည်သော care plan ကို စတင်ပါ။</p><button class="min-h-11 rounded-xl bg-skino-orange px-4 text-xs font-medium text-white" type="button" @click="latestResult ? viewHistoryItem(latestResult) : openView('scan')">{{ latestResult ? 'နောက်ဆုံးရလဒ် ကြည့်မယ်' : 'စကင် စမယ်' }} →</button></div></div>
@@ -1151,7 +1216,7 @@ onUnmounted(() => {
             <label class="grid gap-2 text-xs sm:col-span-2"><span class="font-medium">Notes for specialist</span><textarea v-model.trim="appointmentForm.notes" class="min-h-28 resize-y rounded-lg border border-skino-line p-3 leading-5 outline-none focus:border-skino-orange" maxlength="2000" placeholder="Share irritation, products you use, or what you want help with."></textarea></label>
           </div>
           <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] leading-5 text-skino-muted">This sends a consultation request, not an emergency or medical diagnosis. Seek urgent medical help for severe pain, breathing difficulty, or rapidly spreading symptoms.</div>
-          <button class="mt-4 min-h-11 w-full rounded-lg bg-skino-orange px-4 text-xs font-medium text-white shadow-skino-sm hover:bg-skino-orange-dark disabled:opacity-40" type="submit" :disabled="appointmentLoading">{{ appointmentLoading ? 'Sending request…' : 'Send appointment request →' }}</button>
+          <button class="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-skino-orange px-4 text-xs font-medium text-white shadow-skino-sm hover:bg-skino-orange-dark disabled:opacity-40" type="submit" :disabled="appointmentLoading"><i v-if="appointmentLoading" class="button-spinner light"></i>{{ appointmentLoading ? 'Sending request…' : 'Send appointment request →' }}</button>
         </article>
       </form>
     </section>

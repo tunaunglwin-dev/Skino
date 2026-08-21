@@ -122,14 +122,35 @@ const modules = computed(() => language.value === 'en' ? [
   { title: 'မှတ်တမ်း၊ လုံခြုံမှုနှင့် အကူအညီ', subtitle: 'သိမ်းထားသောစကင်ကို ပြန်ကြည့်၊ privacy ကို ထိန်းချုပ် သို့မဟုတ် ကျွမ်းကျင်သူထံ ရလဒ်မျှဝေပါ။', icon: specialistIcon, status: 'အကူအညီရမယ်', tone: '#38748f', feature: 'မှတ်တမ်း + privacy + ကျွမ်းကျင်သူ' },
 ])
 const onboardingPages = [
-  { kicker: 'Welcome / 01', title: 'Meet your AI skincare bestie.', body: 'Skino helps you scan your face, understand visible skin concerns, and build a simple care routine.', image: waveMascot },
-  { kicker: 'Safe scan / 02', title: 'Scan with care.', body: 'Use clear light, keep your full face visible, and treat every result as guidance—not a medical diagnosis.', image: scanIcon },
-  { kicker: 'Consent / 03', title: 'Your face. Your choice.', body: 'Your face scan may contain sensitive skin and biometric information. Skino uses it only for analysis, result display, and care guidance.', image: reportIcon },
+  {
+    kicker: 'Welcome / 01',
+    title: 'Meet your private skin companion.',
+    titleMy: 'သင့်ကိုယ်ပိုင် အသားအရေ အဖော် Skino',
+    body: 'Skino connects one guided face scan to understandable results, a practical daily routine, and progress you can revisit.',
+    bodyMy: 'လမ်းညွှန်ထားသော မျက်နှာစကင်မှ နားလည်လွယ်သည့် ရလဒ်၊ နေ့စဉ်လုပ်စရာနှင့် တိုးတက်မှုမှတ်တမ်းအထိ တစ်နေရာတည်းတွင် အသုံးပြုနိုင်ပါသည်။',
+    image: waveMascot,
+  },
+  {
+    kicker: 'Safe scan / 02',
+    title: 'A clear photo makes a better demo.',
+    titleMy: 'ပုံကြည်လင်လေ ရလဒ်ပိုကောင်းလေ',
+    body: 'Use even light, face the camera directly, remove filters, and keep your whole face visible. Skino selects the clearest of three captured frames.',
+    bodyMy: 'အလင်းညီညာစွာထားပြီး ကင်မရာကို တည့်တည့်ကြည့်ပါ။ Filter မသုံးဘဲ မျက်နှာအပြည့်မြင်ရပါမည်။ ရိုက်ထားသော frame သုံးခုထဲမှ အကြည်ဆုံးပုံကို ရွေးပေးပါသည်။',
+    image: scanIcon,
+  },
+  {
+    kicker: 'Consent / 03',
+    title: 'Your face. Your permission. Your control.',
+    titleMy: 'သင့်မျက်နှာ၊ သင့်ခွင့်ပြုချက်၊ သင့်ဆုံးဖြတ်ချက်',
+    body: 'A face photo can be sensitive. Required choices enable your requested scan; optional model-learning remains off unless you choose it.',
+    bodyMy: 'မျက်နှာပုံသည် အရေးကြီးသော ကိုယ်ရေးဒေတာဖြစ်နိုင်ပါသည်။ စကင်လုပ်ရန် လိုအပ်သော ခွင့်ပြုချက်များကိုသာ မဖြစ်မနေတောင်းပြီး AI လေ့လာရေးကို သင်ရွေးမှသာ ဖွင့်ပါမည်။',
+    image: reportIcon,
+  },
 ]
 const onboardingConsents = [
-  { key: 'terms', icon: historyIcon, title: 'Terms of Service and Privacy Policy', text: 'I agree to Skino’s service terms and understand how my account, scan, and routine information are handled.', badge: 'Required' },
-  { key: 'scan', icon: scanIcon, title: 'AI face-scan processing', text: 'I allow Skino to process my face photo for skin analysis, result display, and care guidance. This is not medical advice.', badge: 'Required' },
-  { key: 'training', icon: progressIcon, title: 'Help improve Skino AI', text: 'Allow reviewed scans to help improve the model. This is optional and can be changed later from your profile.', badge: 'Optional' },
+  { key: 'terms', icon: historyIcon, title: 'Terms & Privacy', titleMy: 'စည်းမျဉ်းနှင့် ကိုယ်ရေးလုံခြုံမှု', text: 'I agree to the service terms and understand how my account, scan, and routine data are handled.', textMy: 'ဝန်ဆောင်မှုစည်းမျဉ်းကို သဘောတူပြီး account၊ scan နှင့် routine ဒေတာကို မည်သို့ကိုင်တွယ်သည်ကို နားလည်ပါသည်။', badge: 'Required' },
+  { key: 'scan', icon: scanIcon, title: 'Face-scan processing', titleMy: 'မျက်နှာစကင် စစ်ဆေးခွင့်', text: 'I allow my selected photo to be processed for skin analysis, result display, and care guidance. This is not medical advice.', textMy: 'ရွေးထားသောပုံကို အသားအရေစစ်ဆေးမှု၊ ရလဒ်ပြသမှုနှင့် care guidance အတွက် အသုံးပြုခွင့်ပေးပါသည်။ ဆေးဘက်ဆိုင်ရာ diagnosis မဟုတ်ပါ။', badge: 'Required' },
+  { key: 'training', icon: progressIcon, title: 'Help improve Skino AI', titleMy: 'Skino AI တိုးတက်ရေးတွင် ပါဝင်မယ်', text: 'Allow an eligible scan to enter a review queue for future model improvement. You can turn this off later.', textMy: 'သင့်တော်သော scan ကို နောက်ပိုင်း model တိုးတက်ရေးအတွက် review queue သို့ ပို့ခွင့်ပေးပါသည်။ Profile မှ အချိန်မရွေး ပိတ်နိုင်ပါသည်။', badge: 'Optional' },
 ]
 const currentOnboarding = computed(() => onboardingPages[onboardingStep.value])
 const isLastOnboardingStep = computed(() => onboardingStep.value === onboardingPages.length - 1)
@@ -387,6 +408,7 @@ onUnmounted(() => {
             <h1 class="mt-2 text-3xl font-medium leading-none tracking-[-.045em]">{{ t.loginTitle }}</h1>
             <p class="mb-0 mt-2 max-w-xs text-xs leading-5 text-skino-muted">{{ t.loginText }}</p>
           </div>
+          <div v-if="authLoading" class="auth-progress-line" role="status" aria-live="polite"><i></i><span>Securely connecting to your workspace…</span></div>
           <div v-if="googleClientId" ref="googleButton" class="grid min-h-11 place-items-center overflow-hidden"></div>
           <div v-else class="grid gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-center"><p class="mb-0 text-[11px] leading-4 text-amber-900">Google sign-in is temporarily unavailable. Please continue securely with email.</p></div>
           <div class="flex items-center gap-3 text-[9px] uppercase tracking-[.06em] text-skino-muted before:h-px before:flex-1 before:bg-skino-line after:h-px after:flex-1 after:bg-skino-line"><span>or continue with email</span></div>
@@ -394,7 +416,7 @@ onUnmounted(() => {
           <label class="grid gap-2 text-[11px] text-skino-muted">{{ t.email }}<input v-model="loginForm.email" class="h-11 w-full rounded-xl border border-skino-line bg-skino-paper px-3 text-sm text-skino-ink outline-none transition focus:border-skino-orange focus:bg-white focus:ring-4 focus:ring-orange-100" type="email" autocomplete="email" required /></label>
           <label class="grid gap-2 text-[11px] text-skino-muted">{{ t.password }}<span class="relative block"><input v-model="loginForm.password" class="h-11 w-full rounded-xl border border-skino-line bg-skino-paper px-3 pr-16 text-sm text-skino-ink outline-none transition focus:border-skino-orange focus:bg-white focus:ring-4 focus:ring-orange-100" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" required /><button class="absolute right-2 top-1.5 min-h-8 rounded-lg px-2 text-[10px] text-skino-orange-dark hover:bg-skino-orange-soft" type="button" @click="showPassword = !showPassword">{{ showPassword ? 'Hide' : 'Show' }}</button></span></label>
           <div class="flex items-center justify-between gap-3"><label class="flex items-center gap-2 text-[10px] text-skino-muted"><input v-model="loginForm.remember" class="size-4 accent-skino-orange" type="checkbox" />{{ t.remember }}</label><button class="text-[10px] text-skino-orange-dark hover:underline" type="button">{{ t.forgot }}</button></div>
-          <button class="min-h-11 w-full rounded-xl bg-skino-orange px-5 text-xs font-medium text-white shadow-skino-sm transition hover:-translate-y-0.5 hover:bg-skino-orange-dark disabled:cursor-not-allowed disabled:opacity-50" type="submit" :disabled="authLoading">{{ authLoading ? 'Connecting…' : t.loginButton }} <span>→</span></button>
+          <button class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-skino-orange px-5 text-xs font-medium text-white shadow-skino-sm transition hover:-translate-y-0.5 hover:bg-skino-orange-dark disabled:cursor-not-allowed disabled:opacity-50" type="submit" :disabled="authLoading"><i v-if="authLoading" class="button-spinner light"></i>{{ authLoading ? 'Connecting…' : t.loginButton }} <span v-if="!authLoading">→</span></button>
           <p class="mb-0 text-center text-[9px] text-skino-muted"><span class="text-skino-green">✓</span> Secure connection to your Skino account</p>
         </form>
       </main>
@@ -406,17 +428,57 @@ onUnmounted(() => {
       <div v-if="activeView !== 'login' && showStickyActions" class="sticky-actions"><button class="primary-button" type="button" @click="openLogin">{{ t.startScan }} <span>→</span></button></div>
     </template>
 
-    <main v-else-if="!onboardingComplete" class="min-h-screen bg-[radial-gradient(circle_at_15%_10%,rgba(14,92,86,.08),transparent_28%),radial-gradient(circle_at_88%_8%,rgba(243,106,22,.14),transparent_34%)] bg-skino-cream px-3 py-3 text-skino-ink sm:px-6 sm:py-5">
-      <header class="mx-auto flex min-h-14 max-w-5xl items-center justify-between"><div class="flex items-center gap-3"><img class="size-11 rounded-2xl border border-skino-line-orange object-cover shadow-skino-sm" :src="logo" alt="" /><div class="grid"><span class="text-sm font-medium">Skino</span><small class="text-[10px] text-skino-muted">Private skin workspace</small></div></div><div class="flex items-center gap-3"><span class="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[10px] text-skino-green sm:flex"><i class="size-1.5 rounded-full bg-emerald-500"></i>Consent first</span><button class="text-[11px] text-skino-muted hover:text-skino-orange-dark" type="button" @click="signOut">{{ t.logout }}</button></div></header>
-      <section class="mx-auto mt-2 max-w-5xl overflow-hidden rounded-[28px] border border-skino-line bg-white/95 shadow-skino">
-        <div class="grid gap-5 p-5 sm:p-8 lg:grid-cols-[1fr_360px] lg:items-center lg:gap-12 lg:p-10">
-          <div class="max-w-2xl"><div class="mb-5 flex items-center gap-2"><span v-for="(page, index) in onboardingPages" :key="page.title" class="flex items-center gap-2 text-[9px]" :class="index <= onboardingStep ? 'text-skino-orange-dark' : 'text-skino-muted'"><i class="grid size-6 place-items-center rounded-full not-italic" :class="index < onboardingStep ? 'bg-skino-green text-white' : index === onboardingStep ? 'bg-skino-orange text-white' : 'bg-skino-paper'">{{ index < onboardingStep ? '✓' : index + 1 }}</i><span class="hidden sm:inline">{{ index === 0 ? 'Welcome' : index === 1 ? 'Safe scan' : 'Your consent' }}</span></span></div><p class="mb-3 text-[10px] font-medium uppercase tracking-[.14em] text-skino-orange-dark">{{ currentOnboarding.kicker }}</p><h1 class="max-w-xl text-3xl font-medium leading-[1.02] tracking-[-.045em] sm:text-4xl lg:text-5xl">{{ currentOnboarding.title }}</h1><p class="mb-0 mt-4 max-w-xl text-xs leading-6 text-skino-muted sm:text-sm">{{ currentOnboarding.body }}</p><div v-if="isLastOnboardingStep" class="mt-5 grid gap-2 rounded-2xl bg-skino-paper p-4 text-[11px] leading-5 text-skino-muted sm:grid-cols-3"><span><b class="mb-1 block text-skino-ink">What we use</b>Face photo, scan result, and care activity.</span><span><b class="mb-1 block text-skino-ink">Why we use it</b>Analysis, result display, and personal guidance.</span><span><b class="mb-1 block text-skino-ink">Your control</b>AI improvement stays optional and changeable.</span></div><p v-if="onboardingError" class="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-[11px] leading-5 text-red-700" role="alert">{{ onboardingError }}</p></div>
-          <div class="relative grid min-h-52 place-items-center overflow-hidden rounded-[24px] border border-skino-line-orange bg-[linear-gradient(145deg,#fff8ef,#ffe8d5)] sm:min-h-60 lg:min-h-72"><span class="absolute left-4 top-4 rounded-full bg-white/80 px-3 py-1 text-[9px] text-skino-orange-dark">Step {{ onboardingStep + 1 }} of {{ onboardingPages.length }}</span><span class="absolute -right-12 -top-12 size-36 rounded-full bg-white/55"></span><img class="relative max-h-44 w-2/3 object-contain drop-shadow-xl sm:max-h-52" :src="currentOnboarding.image" alt="" /></div>
+    <main v-else-if="!onboardingComplete" class="onboarding-page text-skino-ink">
+      <header class="onboarding-topbar">
+        <div class="flex min-w-0 items-center gap-3"><img class="size-11 shrink-0 rounded-2xl border border-skino-line-orange object-cover shadow-skino-sm" :src="logo" alt="Skino" /><div class="grid min-w-0"><span class="text-sm font-medium">Skino</span><small class="truncate text-[11px] text-skino-muted">Private skin workspace · ကိုယ်ပိုင် Skin Workspace</small></div></div>
+        <div class="flex shrink-0 items-center gap-3"><span class="hidden items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] text-skino-green sm:flex"><i class="size-1.5 rounded-full bg-emerald-500"></i>Consent first</span><button class="min-h-10 rounded-full border border-skino-line bg-white px-3 text-[11px] text-skino-muted transition hover:border-skino-orange hover:text-skino-orange-dark" type="button" @click="signOut">{{ t.logout }}</button></div>
+      </header>
+
+      <section class="onboarding-panel">
+        <div class="onboarding-progress" aria-label="Onboarding progress">
+          <span v-for="(page, index) in onboardingPages" :key="page.title" :class="{ active: index === onboardingStep, complete: index < onboardingStep }"><i>{{ index < onboardingStep ? '✓' : index + 1 }}</i><b>{{ index === 0 ? 'Welcome' : index === 1 ? 'Safe scan' : 'Consent' }}</b><small>{{ index === 0 ? 'မိတ်ဆက်' : index === 1 ? 'စကင်လမ်းညွှန်' : 'ခွင့်ပြုချက်' }}</small></span>
         </div>
-        <div v-if="isLastOnboardingStep" class="grid gap-2 border-t border-skino-line bg-[#fffcf8] p-5 sm:p-8 lg:grid-cols-3">
-          <label v-for="consent in onboardingConsents" :key="consent.key" class="grid cursor-pointer grid-cols-[48px_1fr_20px] items-start gap-3 rounded-2xl border p-3.5 transition hover:-translate-y-0.5" :class="[(consent.key === 'terms' ? acceptedTerms : consent.key === 'scan' ? acceptedScanConsent : allowModelTraining) ? 'border-emerald-200 bg-emerald-50' : 'border-skino-line bg-white']"><span class="grid size-12 place-items-center rounded-xl bg-skino-paper"><img class="size-10 object-contain" :src="consent.icon" alt="" /></span><span class="grid gap-1"><small class="text-[8px] uppercase tracking-[.1em] text-skino-orange-dark">{{ consent.badge }}</small><strong class="text-[11px] font-medium leading-4">{{ consent.title }}</strong><small class="text-[9px] leading-4 text-skino-muted">{{ consent.text }}</small><span v-if="consent.key === 'terms'" class="flex gap-3 text-[10px]"><a class="text-skino-orange-dark underline" href="/terms.html" target="_blank" rel="noopener" @click.stop>Read Terms</a><a class="text-skino-orange-dark underline" href="/privacy.html" target="_blank" rel="noopener" @click.stop>Read Privacy Policy</a></span></span><input v-if="consent.key === 'terms'" v-model="acceptedTerms" class="mt-1 size-4 accent-skino-green" type="checkbox" /><input v-else-if="consent.key === 'scan'" v-model="acceptedScanConsent" class="mt-1 size-4 accent-skino-green" type="checkbox" /><input v-else v-model="allowModelTraining" class="mt-1 size-4 accent-skino-green" type="checkbox" /></label>
+
+        <div class="onboarding-hero-grid">
+          <div class="onboarding-message">
+            <p class="onboarding-kicker">{{ currentOnboarding.kicker }}</p>
+            <h1>{{ currentOnboarding.title }}</h1>
+            <h2>{{ currentOnboarding.titleMy }}</h2>
+            <p>{{ currentOnboarding.body }}</p>
+            <p class="onboarding-myanmar-copy">{{ currentOnboarding.bodyMy }}</p>
+            <div v-if="isLastOnboardingStep" class="onboarding-data-summary">
+              <span><i>01</i><b>What is used</b><small>ရွေးထားသော မျက်နှာပုံ၊ scan result နှင့် routine activity</small></span>
+              <span><i>02</i><b>Why it is used</b><small>Analysis၊ ရလဒ်ပြသမှုနှင့် ကိုယ်ပိုင် care guidance</small></span>
+              <span><i>03</i><b>Your control</b><small>AI လေ့လာရေးသည် optional ဖြစ်ပြီး Profile မှ ပြောင်းနိုင်သည်</small></span>
+            </div>
+            <p v-if="onboardingError" class="onboarding-error" role="alert">{{ onboardingError }}</p>
+          </div>
+
+          <div class="onboarding-art" :class="{ 'consent-art': isLastOnboardingStep }">
+            <span>Step {{ onboardingStep + 1 }} / {{ onboardingPages.length }}</span>
+            <i aria-hidden="true"></i>
+            <img :src="currentOnboarding.image" alt="" />
+            <small>{{ isLastOnboardingStep ? 'Nothing is shared for model learning unless you choose it.' : 'Guided · Clear · Private' }}</small>
+          </div>
         </div>
-        <footer class="flex flex-col gap-4 border-t border-skino-line px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8"><p class="mb-0 max-w-lg text-[9px] leading-4 text-skino-muted">Required choices must be accepted before scanning. Optional model improvement can be changed later in your profile.</p><div class="grid gap-2 sm:flex"><button v-if="onboardingStep > 0" class="min-h-11 rounded-xl border border-skino-line bg-white px-5 text-xs hover:border-skino-orange" type="button" @click="previousOnboardingStep">Back</button><button class="min-h-11 rounded-xl bg-skino-orange px-6 text-xs font-medium text-white shadow-skino-sm hover:bg-skino-orange-dark disabled:cursor-not-allowed disabled:opacity-40" type="button" :disabled="authLoading || (isLastOnboardingStep && !canFinishOnboarding)" @click="nextOnboardingStep">{{ authLoading ? 'Saving your choices…' : (isLastOnboardingStep ? 'Accept required choices and continue' : 'Continue') }} <span>→</span></button></div></footer>
+
+        <div v-if="isLastOnboardingStep" class="onboarding-consent-area">
+          <div class="onboarding-consent-heading"><div><p>Choose before your first scan</p><h2>လိုအပ်သော ခွင့်ပြုချက် ၂ ခုကို ဖတ်ပြီး ရွေးပါ</h2></div><span><b>{{ Number(acceptedTerms) + Number(acceptedScanConsent) }}/2</b> required selected</span></div>
+          <div class="onboarding-consent-grid">
+            <label v-for="consent in onboardingConsents" :key="consent.key" class="onboarding-consent-card" :class="[(consent.key === 'terms' ? acceptedTerms : consent.key === 'scan' ? acceptedScanConsent : allowModelTraining) ? 'selected' : '', consent.key === 'training' ? 'optional' : '']">
+              <span class="consent-icon"><img :src="consent.icon" alt="" /></span>
+              <span class="consent-copy"><small>{{ consent.badge }}</small><strong>{{ consent.titleMy }}</strong><b>{{ consent.title }}</b><span>{{ consent.textMy }}</span><em>{{ consent.text }}</em><span v-if="consent.key === 'terms'" class="consent-links"><a href="/terms.html" target="_blank" rel="noopener" @click.stop>Terms</a><a href="/privacy.html" target="_blank" rel="noopener" @click.stop>Privacy Policy</a></span></span>
+              <input v-if="consent.key === 'terms'" v-model="acceptedTerms" type="checkbox" />
+              <input v-else-if="consent.key === 'scan'" v-model="acceptedScanConsent" type="checkbox" />
+              <input v-else v-model="allowModelTraining" type="checkbox" />
+            </label>
+          </div>
+        </div>
+
+        <footer class="onboarding-actions">
+          <p><span>✓</span> Required choices are saved securely to your account. Optional AI improvement can be changed later.</p>
+          <div><button v-if="onboardingStep > 0" class="onboarding-back" type="button" @click="previousOnboardingStep">← Back</button><button class="onboarding-next" type="button" :disabled="authLoading || (isLastOnboardingStep && !canFinishOnboarding)" @click="nextOnboardingStep"><i v-if="authLoading" class="button-spinner light"></i>{{ authLoading ? 'Saving your choices…' : (isLastOnboardingStep ? 'သဘောတူပြီး Workspace ဝင်မယ်' : 'Continue') }} <span v-if="!authLoading">→</span></button></div>
+        </footer>
       </section>
     </main>
 
