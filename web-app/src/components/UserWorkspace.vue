@@ -1100,14 +1100,13 @@ onUnmounted(() => {
       <div class="workspace-skeleton-grid" aria-hidden="true"><span v-for="index in 5" :key="index"><i></i><b></b><small></small><em></em></span></div>
     </section>
 
-    <section v-else-if="activeView === 'home'" class="workspace-view dashboard-home mx-auto grid max-w-7xl content-start gap-5 py-5 sm:gap-7 sm:py-8">
+    <section v-else-if="activeView === 'home'" class="workspace-view dashboard-home mx-auto grid max-w-7xl content-start gap-3 py-3 sm:gap-4 sm:py-4">
       <article class="dashboard-hero">
         <div class="dashboard-hero-copy">
           <span class="dashboard-hero-kicker"><i></i>{{ dashboardGreeting }}, {{ user.name?.split(' ')[0] || 'Skino' }}</span>
           <h1>{{ t('သင့်အသားအရေကို နေ့တိုင်း ပိုကောင်းစွာ နားလည်ပါ။', 'Understand your skin better, every day.') }}</h1>
           <p>{{ t('လမ်းညွှန်ထားသော စကင်၊ ရှင်းလင်းသော ရလဒ်နှင့် လိုက်နာရလွယ်သော routine ကို တစ်နေရာတည်းတွင် ကြည့်ရှုနိုင်ပါသည်။', 'Use guided scans, clear results and a practical routine—all in one private workspace.') }}</p>
           <div class="dashboard-hero-actions"><button type="button" @click="openView('scan')"><span>◎</span>{{ t('စကင်အသစ် စမယ်', 'Start a new scan') }}</button><button type="button" @click="openView(history.length ? 'history' : 'safety')">{{ history.length ? t('တိုးတက်မှုကြည့်မယ်', 'View progress') : t('စကင်အကြောင်း လေ့လာမယ်', 'How scanning works') }} <span>→</span></button></div>
-          <div class="dashboard-trust-row"><span>✓ {{ t('ကိုယ်ပိုင်နေရာ', 'Private workspace') }}</span><span>✓ {{ t('ပုံ ၃ ပုံ နှိုင်းယှဉ်မှု', 'Three-frame median') }}</span><span>✓ {{ t('Diagnosis မဟုတ်ပါ', 'Wellness guidance') }}</span></div>
         </div>
         <div class="dashboard-hero-visual">
           <span class="dashboard-orbit dashboard-orbit-one"></span><span class="dashboard-orbit dashboard-orbit-two"></span>
