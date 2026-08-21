@@ -143,6 +143,9 @@ export async function analyzeSkin(token, image, allowModelTraining = false, capt
   formData.append('frame_count', String(captureContext.frameCount || 1))
   formData.append('client_quality_score', String(captureContext.qualityScore || 0))
   formData.append('device_category', captureContext.deviceCategory || 'unknown')
+  for (const frame of (captureContext.frames || []).slice(0, 2)) {
+    formData.append('frames[]', frame, frame.name || 'skino-frame.jpg')
+  }
   if (captureContext.landmarks?.length >= 468) {
     formData.append('face_landmarks', JSON.stringify(captureContext.landmarks))
   }
@@ -151,7 +154,7 @@ export async function analyzeSkin(token, image, allowModelTraining = false, capt
     token,
     formData,
     signal,
-    timeoutMs: 45000,
+    timeoutMs: 90000,
   })
   return payload.data
 }

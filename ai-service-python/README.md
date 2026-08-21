@@ -44,6 +44,20 @@ The promotion decision is stored in `..\models\cnn_acne_severity_v1\evaluation_r
 
 The web scanner can also submit MediaPipe face landmarks. The service uses those landmarks to create adaptive forehead, cheek, nose, and chin polygon masks, with the older fixed boxes retained as a fallback.
 
+Production loads the evaluated CPU TorchScript acne-severity model from
+`../models/cnn_acne_severity_v1/model.torchscript.pt` when available. Override
+the artifact or calibration temperature with:
+
+```dotenv
+SKIN_AI_TORCHSCRIPT_PATH=../models/cnn_acne_severity_v1/model.torchscript.pt
+SKIN_AI_TORCHSCRIPT_TEMPERATURE=1.125
+```
+
+Camera captures may include up to three `frames` parts. Each frame is analyzed
+independently and numeric signals are aggregated by median to reduce transient
+camera noise. Zone metrics use eroded landmark masks, exclude facial features,
+and are normalized relative to the same face.
+
 ## Endpoints
 
 - `GET /health`

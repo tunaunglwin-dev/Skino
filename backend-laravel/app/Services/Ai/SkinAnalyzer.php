@@ -12,7 +12,7 @@ class SkinAnalyzer
     /**
      * @return array<string, mixed>
      */
-    public function analyze(UploadedFile $image, ?string $faceLandmarks = null): array
+    public function analyze(UploadedFile $image, ?string $faceLandmarks = null, array $frames = []): array
     {
         $baseUrl = rtrim((string) config('services.skin_ai.base_url'), '/');
 
@@ -21,13 +21,25 @@ class SkinAnalyzer
         }
 
         try {
-            $response = Http::timeout((int) config('services.skin_ai.timeout', 15))
+            $pendingRequest = Http::timeout((int) config('services.skin_ai.timeout', 90))
                 ->attach(
                     'image',
                     file_get_contents($image->getRealPath()),
                     $image->getClientOriginalName() ?: 'skin-image.jpg',
-                )
-                ->post($baseUrl.'/analyze', array_filter([
+                );
+
+            foreach (array_slice($frames, 0, 2) as $index => $frame) {
+                if (! $frame instanceof UploadedFile) {
+                    continue;
+                }
+                $pendingRequest = $pendingRequest->attach(
+                    'frames',
+                    file_get_contents($frame->getRealPath()),
+                    $frame->getClientOriginalName() ?: 'skin-frame-'.($index + 1).'.jpg',
+                );
+            }
+
+            $response = $pendingRequest->post($baseUrl.'/analyze', array_filter([
                     'face_landmarks' => $faceLandmarks,
                 ], static fn (mixed $value): bool => $value !== null && $value !== ''))
                 ->throw()

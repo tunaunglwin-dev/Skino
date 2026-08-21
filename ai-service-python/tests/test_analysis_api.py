@@ -106,6 +106,23 @@ class AnalysisApiTest(TestCase):
             [zone["key"] for zone in response.json()["skin_zones"]],
             ["forehead", "left_cheek", "right_cheek", "nose", "chin"],
         )
+        self.assertGreaterEqual(len(response.json()["skin_zones"][0]["polygon"]), 8)
+
+    def test_analyze_aggregates_three_frames(self) -> None:
+        response = self.client.post(
+            "/analyze",
+            files=[
+                ("image", ("frame-1.png", self._sample_skin_image(), "image/png")),
+                ("frames", ("frame-2.png", self._sample_skin_image(), "image/png")),
+                ("frames", ("frame-3.png", self._dark_skin_image(), "image/png")),
+            ],
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertIn(payload["acne_severity"], ["none", "mild", "moderate", "severe"])
+        self.assertIn(payload["scan_quality"]["level"], ["good", "medium", "low"])
+        self.assertGreaterEqual(len(payload["skin_zones"]), 4)
 
     def test_analyze_rejects_malformed_landmarks(self) -> None:
         response = self.client.post(

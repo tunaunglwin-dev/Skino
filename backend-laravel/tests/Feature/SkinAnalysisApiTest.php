@@ -75,6 +75,9 @@ class SkinAnalysisApiTest extends TestCase
 
         $response = $this->postJson('/api/skin-analyses', [
             'image' => $this->fakePngUpload(),
+            'frames' => [$this->fakePngUpload(), $this->fakePngUpload()],
+            'capture_mode' => 'multi_frame_median',
+            'frame_count' => 3,
             'face_landmarks' => $faceLandmarks,
         ]);
 
@@ -101,7 +104,8 @@ class SkinAnalysisApiTest extends TestCase
         $this->assertDatabaseCount('model_training_samples', 0);
 
         Http::assertSent(fn ($request) => str_contains($request->body(), 'face_landmarks')
-            && str_contains($request->body(), $faceLandmarks));
+            && str_contains($request->body(), $faceLandmarks)
+            && substr_count($request->body(), 'name="frames"') === 2);
         Http::assertSentCount(1);
     }
 

@@ -23,8 +23,10 @@ class StoreSkinAnalysisRequest extends FormRequest
     {
         return [
             'image' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
+            'frames' => ['sometimes', 'array', 'max:2'],
+            'frames.*' => ['file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:8192'],
             'allow_model_training' => ['sometimes', 'boolean'],
-            'capture_mode' => ['sometimes', 'string', 'in:single_upload,single_camera,multi_frame_best'],
+            'capture_mode' => ['sometimes', 'string', 'in:single_upload,single_camera,multi_frame_best,multi_frame_median'],
             'frame_count' => ['sometimes', 'integer', 'between:1,8'],
             'client_quality_score' => ['sometimes', 'numeric', 'between:0,100'],
             'device_category' => ['sometimes', 'string', 'in:mobile,tablet,desktop,unknown'],

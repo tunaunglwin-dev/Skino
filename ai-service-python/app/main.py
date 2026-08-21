@@ -1,20 +1,29 @@
 import json
 import os
+from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 
 from app.calibration import HeuristicCalibration
+from app.cnn_model import TorchScriptAcneModel
 from app.schemas import AnalysisResponse
 from app.trained_model import TrainedSkinModel
 from app.vision import InvalidImageError, SkinVisionAnalyzer
 
 
-app = FastAPI(title="Skin AI Service", version="0.2.0")
+app = FastAPI(title="Skin AI Service", version="0.3.0")
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
 analyzer = SkinVisionAnalyzer(
     calibration=HeuristicCalibration.load(os.getenv("SKIN_AI_CALIBRATION_PATH")),
     trained_model=TrainedSkinModel.load(os.getenv("SKIN_AI_MODEL_PATH")),
+    acne_model=TorchScriptAcneModel.load(
+        os.getenv(
+            "SKIN_AI_TORCHSCRIPT_PATH",
+            str(Path(__file__).resolve().parents[2] / "models" / "cnn_acne_severity_v1" / "model.torchscript.pt"),
+        ),
+        temperature=float(os.getenv("SKIN_AI_TORCHSCRIPT_TEMPERATURE", "1.125")),
+    ),
 )
 
 
@@ -24,17 +33,23 @@ def health() -> dict[str, str]:
 
 
 @app.post("/analyze", response_model=AnalysisResponse)
-async def analyze_skin(image: UploadFile = File(...), face_landmarks: str | None = Form(None)) -> AnalysisResponse:
-    if image.content_type not in ALLOWED_IMAGE_TYPES:
-        raise HTTPException(status_code=415, detail="Only JPEG, PNG, and WebP images are supported.")
+async def analyze_skin(
+    image: UploadFile = File(...),
+    frames: list[UploadFile] | None = File(None),
+    face_landmarks: str | None = Form(None),
+) -> AnalysisResponse:
+    uploads = [image, *(frames or [])][:3]
+    for upload in uploads:
+        if upload.content_type not in ALLOWED_IMAGE_TYPES:
+            raise HTTPException(status_code=415, detail="Only JPEG, PNG, and WebP images are supported.")
 
-    image_bytes = await image.read()
-    if len(image_bytes) > MAX_IMAGE_BYTES:
-        raise HTTPException(status_code=413, detail="Image must be 8 MB or smaller.")
+    image_frames = [await upload.read() for upload in uploads]
+    if any(len(frame) > MAX_IMAGE_BYTES for frame in image_frames):
+        raise HTTPException(status_code=413, detail="Each image must be 8 MB or smaller.")
 
     try:
         landmarks = parse_landmarks(face_landmarks)
-        return analyzer.analyze(image_bytes, landmarks)
+        return analyzer.analyze_many(image_frames, landmarks)
     except InvalidImageError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 

@@ -146,6 +146,9 @@ Returns the authenticated user's skin analysis history.
 Accepts multipart form data:
 
 - `image`: required JPG, PNG, or WebP image, max 8 MB
+- `frames[]`: optional additional JPG, PNG, or WebP frames, max 3 total images and 8 MB each. The AI service aggregates frame results by median.
+- `face_landmarks`: optional JSON string with at least 468 normalized MediaPipe landmarks for adaptive zone masks.
+- `capture_mode`: optional `single_upload`, `single_camera`, `multi_frame_best`, or `multi_frame_median`.
 - `allow_model_training`: optional boolean. When true, the scan image/result can enter the review queue for improving future AI models.
 
 Laravel sends the image to the Python AI service, stores the result, calculates product recommendations, and returns:
@@ -211,7 +214,9 @@ Returns service status.
 
 Accepts multipart form data:
 
-- `image`: uploaded skin image
+- `image`: primary uploaded skin image
+- `frames`: up to two additional uploaded frames; repeated multipart fields are analyzed with the primary image and aggregated by median
+- `face_landmarks`: optional MediaPipe landmark JSON used for eroded, feature-excluding forehead, cheek, nose, and chin masks
 
 Returns:
 

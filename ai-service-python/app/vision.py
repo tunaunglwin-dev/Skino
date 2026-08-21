@@ -1,10 +1,12 @@
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import dataclass, replace
 from io import BytesIO
-from statistics import mean
+from statistics import mean, median
 
 from PIL import Image, ImageFilter, ImageOps, UnidentifiedImageError
 
 from app.calibration import HeuristicCalibration
+from app.cnn_model import TorchScriptAcneModel
 from app.landmark_zones import landmark_zone_images
 from app.schemas import AnalysisResponse, Concern, ScanQuality, SkinZone, TreatmentPackage
 from app.trained_model import TrainedSkinModel
@@ -26,6 +28,7 @@ class SkinMetrics:
     skin_coverage: float
     face_centering: float
     lighting_evenness: float
+    sharpness: float
 
 
 class SkinVisionAnalyzer:
@@ -33,29 +36,35 @@ class SkinVisionAnalyzer:
         self,
         calibration: HeuristicCalibration | None = None,
         trained_model: TrainedSkinModel | None = None,
+        acne_model: TorchScriptAcneModel | None = None,
     ) -> None:
         self.calibration = calibration or HeuristicCalibration()
         self.trained_model = trained_model
+        self.acne_model = acne_model
 
     def analyze(self, image_bytes: bytes, face_landmarks: list[dict[str, float]] | None = None) -> AnalysisResponse:
-        metrics = self.extract_metrics(image_bytes)
-        skin_zones = self.extract_skin_zones(image_bytes, face_landmarks)
-        scan_quality = self._scan_quality(metrics)
+        raw_image = self._resize_for_analysis(self._decode_image(image_bytes))
+        quality_metrics = self._extract_image_metrics(raw_image)
+        image = self._normalize_luminance(raw_image)
+        metrics = self._extract_image_metrics(image)
+        skin_zones = self._extract_skin_zones(image, face_landmarks, metrics)
+        scan_quality = self._scan_quality(quality_metrics)
         if self.trained_model:
             trained_result = self.trained_model.predict(metrics)
             if trained_result.skin_type != "unknown":
-                return self._stabilize_result(
+                result = self._stabilize_result(
                     trained_result.model_copy(
                         update={
                             "skin_zones": skin_zones,
                             "scan_quality": scan_quality,
                         }
                     ),
-                    metrics,
+                    quality_metrics,
                 )
+                return self._apply_acne_model(result, image, scan_quality)
 
             fallback_result = self.predict(metrics)
-            return self._stabilize_result(
+            result = self._stabilize_result(
                 AnalysisResponse(
                     skin_type=fallback_result.skin_type,
                     skin_type_confidence=fallback_result.skin_type_confidence,
@@ -69,18 +78,30 @@ class SkinVisionAnalyzer:
                         trained_result.concerns or fallback_result.concerns,
                     ),
                 ),
-                metrics,
+                quality_metrics,
             )
+            return self._apply_acne_model(result, image, scan_quality)
 
-        return self._stabilize_result(
+        result = self._stabilize_result(
             self.predict(metrics).model_copy(
                 update={
                     "skin_zones": skin_zones,
                     "scan_quality": scan_quality,
                 }
             ),
-            metrics,
+            quality_metrics,
         )
+        return self._apply_acne_model(result, image, scan_quality)
+
+    def analyze_many(
+        self,
+        image_frames: list[bytes],
+        face_landmarks: list[dict[str, float]] | None = None,
+    ) -> AnalysisResponse:
+        if not image_frames:
+            raise InvalidImageError("Empty image upload.")
+        results = [self.analyze(frame, face_landmarks) for frame in image_frames[:3]]
+        return results[0] if len(results) == 1 else self._median_result(results)
 
     def _stabilize_result(
         self,
@@ -150,12 +171,18 @@ class SkinVisionAnalyzer:
             factor *= 0.82
         if metrics.lighting_evenness < 0.45:
             factor *= 0.82
+        if metrics.sharpness < 0.34:
+            factor *= 0.72
 
         return max(0.42, min(factor, 1.0))
 
     def extract_metrics(self, image_bytes: bytes) -> SkinMetrics:
         image = self._decode_image(image_bytes)
         image = self._resize_for_analysis(image)
+        image = self._normalize_luminance(image)
+        return self._extract_image_metrics(image)
+
+    def _extract_image_metrics(self, image: Image.Image) -> SkinMetrics:
         pixels, coverage, face_centering, lighting_evenness = self._skin_pixels(image)
         return self._extract_metrics(
             image,
@@ -168,11 +195,29 @@ class SkinVisionAnalyzer:
     def extract_skin_zones(self, image_bytes: bytes, face_landmarks: list[dict[str, float]] | None = None) -> list[SkinZone]:
         image = self._decode_image(image_bytes)
         image = self._resize_for_analysis(image)
+        return self._extract_skin_zones(image, face_landmarks, self.extract_metrics(image_bytes))
+
+    def _extract_skin_zones(
+        self,
+        image: Image.Image,
+        face_landmarks: list[dict[str, float]] | None,
+        global_metrics: SkinMetrics,
+    ) -> list[SkinZone]:
         width, height = image.size
 
-        landmark_crops = landmark_zone_images(image, face_landmarks)
-        if landmark_crops:
-            return [self._zone_from_crop(key, label, crop) for key, label, crop in landmark_crops]
+        landmark_regions = landmark_zone_images(image, face_landmarks)
+        if landmark_regions:
+            return [
+                self._zone_from_crop(
+                    region.key,
+                    region.label,
+                    region.image,
+                    mask=region.mask,
+                    global_metrics=global_metrics,
+                    polygon=region.polygon,
+                )
+                for region in landmark_regions
+            ]
 
         zone_boxes = [
             ("forehead", "Forehead", (0.28, 0.12, 0.72, 0.33)),
@@ -193,20 +238,48 @@ class SkinVisionAnalyzer:
                     int(height * bottom),
                 )
             )
-            zones.append(self._zone_from_crop(key, label, crop))
+            zones.append(self._zone_from_crop(key, label, crop, global_metrics=global_metrics))
 
         return zones
 
-    def _zone_from_crop(self, key: str, label: str, crop: Image.Image) -> SkinZone:
-        pixels, coverage, face_centering, lighting_evenness = self._skin_pixels(crop)
+    def _zone_from_crop(
+        self,
+        key: str,
+        label: str,
+        crop: Image.Image,
+        *,
+        mask: Image.Image | None = None,
+        global_metrics: SkinMetrics | None = None,
+        polygon: list[dict[str, float]] | None = None,
+    ) -> SkinZone:
+        effective_mask = self._refine_skin_mask(crop, mask) if mask is not None else None
+        pixels, coverage, face_centering, lighting_evenness = self._skin_pixels(crop, effective_mask)
         metrics = self._extract_metrics(
             crop,
             pixels,
             coverage,
             face_centering,
             lighting_evenness,
+            effective_mask,
         )
-        return self._skin_zone(key, label, metrics)
+        if global_metrics is not None:
+            metrics = self._normalize_zone_metrics(metrics, global_metrics)
+        return self._skin_zone(key, label, metrics, polygon or [])
+
+    def _refine_skin_mask(self, image: Image.Image, polygon_mask: Image.Image) -> Image.Image:
+        resized_mask = polygon_mask.resize(image.size)
+        polygon_values = list(resized_mask.get_flattened_data())
+        pixels = self._rgb_pixels(image)
+        refined_values = [
+            255 if mask_value >= 128 and self._looks_like_skin(pixel) else 0
+            for pixel, mask_value in zip(pixels, polygon_values, strict=True)
+        ]
+        polygon_count = sum(value >= 128 for value in polygon_values)
+        if sum(value >= 128 for value in refined_values) < polygon_count * 0.08:
+            return resized_mask
+        refined = Image.new("L", image.size)
+        refined.putdata(refined_values)
+        return refined
 
     def predict(self, metrics: SkinMetrics) -> AnalysisResponse:
         skin_type, confidence = self._classify_skin_type(metrics)
@@ -264,30 +337,48 @@ class SkinVisionAnalyzer:
 
         return ImageOps.exif_transpose(image).convert("RGB")
 
+    def _normalize_luminance(self, image: Image.Image) -> Image.Image:
+        """Gently reduce camera exposure differences without changing skin chroma."""
+        luminance, blue_chroma, red_chroma = image.convert("YCbCr").split()
+        corrected = ImageOps.autocontrast(luminance, cutoff=(1, 1))
+        luminance = Image.blend(luminance, corrected, 0.32)
+        return Image.merge("YCbCr", (luminance, blue_chroma, red_chroma)).convert("RGB")
+
     def _resize_for_analysis(self, image: Image.Image) -> Image.Image:
-        image.thumbnail((180, 180))
+        image.thumbnail((512, 512), Image.Resampling.LANCZOS)
         return image
 
-    def _skin_pixels(self, image: Image.Image) -> tuple[list[tuple[int, int, int]], float, float, float]:
+    def _skin_pixels(
+        self,
+        image: Image.Image,
+        analysis_mask: Image.Image | None = None,
+    ) -> tuple[list[tuple[int, int, int]], float, float, float]:
         width, height = image.size
-        crop_size = int(min(width, height) * 0.78)
-        left = (width - crop_size) // 2
-        top = (height - crop_size) // 2
-        region = image.crop((left, top, left + crop_size, top + crop_size))
+        if analysis_mask is not None:
+            region = image
+            eligible_mask = [value >= 128 for value in analysis_mask.resize(image.size).get_flattened_data()]
+        else:
+            crop_size = int(min(width, height) * 0.78)
+            left = (width - crop_size) // 2
+            top = (height - crop_size) // 2
+            region = image.crop((left, top, left + crop_size, top + crop_size))
+            eligible_mask = [True] * (region.width * region.height)
         pixels = self._rgb_pixels(region)
 
-        skin_mask = [self._looks_like_skin(pixel) for pixel in pixels]
+        skin_mask = [eligible and self._looks_like_skin(pixel) for pixel, eligible in zip(pixels, eligible_mask, strict=True)]
         skin_pixels = [
             pixel
             for pixel, is_skin in zip(pixels, skin_mask, strict=True)
             if is_skin
         ]
-        coverage = len(skin_pixels) / max(len(pixels), 1)
-        face_centering = self._face_centering_score(skin_mask, region.size)
+        eligible_pixels = sum(eligible_mask)
+        coverage = len(skin_pixels) / max(eligible_pixels, 1)
+        face_centering = 1.0 if analysis_mask is not None else self._face_centering_score(skin_mask, region.size)
         lighting_evenness = self._lighting_evenness(region, skin_mask)
 
         if coverage < 0.08:
-            return pixels, coverage, face_centering, lighting_evenness
+            masked_pixels = [pixel for pixel, eligible in zip(pixels, eligible_mask, strict=True) if eligible]
+            return masked_pixels or pixels, coverage, face_centering, lighting_evenness
 
         return skin_pixels, coverage, face_centering, lighting_evenness
 
@@ -376,6 +467,7 @@ class SkinVisionAnalyzer:
         skin_coverage: float,
         face_centering: float,
         lighting_evenness: float,
+        analysis_mask: Image.Image | None = None,
     ) -> SkinMetrics:
         brightness_values = []
         saturation_values = []
@@ -406,7 +498,8 @@ class SkinVisionAnalyzer:
                 and saturation < self.calibration.highlight_saturation_threshold
             )
 
-        texture_score = self._texture_score(image)
+        texture_score = self._texture_score(image, analysis_mask)
+        sharpness = self._sharpness_score(image, analysis_mask)
 
         raw_red_ratio = sum(red_flags) / len(red_flags)
         raw_dark_ratio = sum(dark_flags) / len(dark_flags)
@@ -422,16 +515,48 @@ class SkinVisionAnalyzer:
             skin_coverage=skin_coverage,
             face_centering=face_centering,
             lighting_evenness=lighting_evenness,
+            sharpness=sharpness,
         )
 
-    def _texture_score(self, image: Image.Image) -> float:
+    def _texture_score(self, image: Image.Image, analysis_mask: Image.Image | None = None) -> float:
         gray = image.convert("L")
-        gray.thumbnail((220, 220))
-        edges = gray.filter(ImageFilter.FIND_EDGES)
-        values = list(edges.tobytes())
-        edge_mean = mean(values) / 255
+        gray.thumbnail((512, 512))
+        values = list(gray.get_flattened_data())
+        width, height = gray.size
+        valid = (
+            [value >= 128 for value in analysis_mask.resize(gray.size).get_flattened_data()]
+            if analysis_mask is not None
+            else [True] * len(values)
+        )
+        differences = []
+        for y in range(1, height - 1):
+            for x in range(1, width - 1):
+                index = (y * width) + x
+                neighbors = [index - 1, index + 1, index - width, index + width]
+                if not valid[index] or not all(valid[position] for position in neighbors):
+                    continue
+                differences.append(abs((values[index] * 4) - sum(values[position] for position in neighbors)))
+        edge_mean = (mean(differences) / 255) if differences else 0.0
 
         return min(edge_mean * self.calibration.texture_multiplier, 1.0)
+
+    def _sharpness_score(self, image: Image.Image, analysis_mask: Image.Image | None = None) -> float:
+        gray = image.convert("L")
+        gray.thumbnail((512, 512))
+        values = list(gray.get_flattened_data())
+        width, height = gray.size
+        valid = (
+            [value >= 128 for value in analysis_mask.resize(gray.size).get_flattened_data()]
+            if analysis_mask is not None
+            else [True] * len(values)
+        )
+        gradients = []
+        for y in range(1, height - 1, 2):
+            for x in range(1, width - 1, 2):
+                index = (y * width) + x
+                if valid[index] and valid[index + 1] and valid[index + width]:
+                    gradients.append(abs(values[index] - values[index + 1]) + abs(values[index] - values[index + width]))
+        return round(min((mean(gradients) if gradients else 0.0) / 28.0, 1.0), 3)
 
     def _rgb_pixels(self, image: Image.Image) -> list[tuple[int, int, int]]:
         data = image.tobytes()
@@ -482,7 +607,31 @@ class SkinVisionAnalyzer:
 
         return sorted(concerns, key=lambda concern: concern.confidence, reverse=True)[:4]
 
-    def _skin_zone(self, key: str, label: str, metrics: SkinMetrics) -> SkinZone:
+    def _normalize_zone_metrics(self, zone: SkinMetrics, face: SkinMetrics) -> SkinMetrics:
+        """Reduce camera/lighting bias while preserving local differences."""
+
+        def relative(value: float, baseline: float, positive_weight: float = 0.9) -> float:
+            difference = value - baseline
+            adjusted = (value * 0.58) + (max(difference, 0.0) * positive_weight)
+            return max(0.0, min(adjusted, 1.0))
+
+        return replace(
+            zone,
+            brightness=max(0.24, min(0.92, 0.62 + ((zone.brightness - face.brightness) * 1.15))),
+            saturation=max(0.05, min(0.85, 0.33 + ((zone.saturation - face.saturation) * 1.1))),
+            red_ratio=relative(zone.red_ratio, face.red_ratio, 1.15),
+            dark_ratio=relative(zone.dark_ratio, face.dark_ratio, 1.05),
+            highlight_ratio=relative(zone.highlight_ratio, face.highlight_ratio, 1.0),
+            texture_score=relative(zone.texture_score, face.texture_score, 0.85),
+        )
+
+    def _skin_zone(
+        self,
+        key: str,
+        label: str,
+        metrics: SkinMetrics,
+        polygon: list[dict[str, float]],
+    ) -> SkinZone:
         concerns = self._detect_concerns(metrics)[:3]
         score = self._skin_health_score(metrics, concerns)
 
@@ -496,7 +645,107 @@ class SkinVisionAnalyzer:
             redness=round(min(metrics.red_ratio * self.calibration.redness_red_weight, 1.0), 2),
             texture=round(min(metrics.texture_score * 2.1, 1.0), 2),
             dryness=round(min(((1 - metrics.brightness) * 0.45) + (metrics.texture_score * 1.1), 1.0), 2),
+            polygon=polygon,
         )
+
+    def _apply_acne_model(
+        self,
+        result: AnalysisResponse,
+        image: Image.Image,
+        scan_quality: ScanQuality,
+    ) -> AnalysisResponse:
+        if self.acne_model is None or scan_quality.level == "low" or scan_quality.sharpness < 0.34:
+            return result
+        prediction = self.acne_model.predict(image)
+        minimum = 0.78 if prediction.severity == "none" else 0.58
+        if prediction.confidence < minimum:
+            return result
+
+        concerns = [concern for concern in result.concerns if concern.name != "acne"]
+        if prediction.severity != "none":
+            concerns.append(
+                Concern(
+                    name="acne",
+                    confidence=round(min(prediction.confidence * 0.86, 0.88), 2),
+                    severity=prediction.severity,
+                )
+            )
+        concerns = sorted(concerns, key=lambda concern: concern.confidence, reverse=True)[:4]
+        return result.model_copy(
+            update={
+                "concerns": concerns,
+                "acne_severity": prediction.severity,
+                "treatment_package": self._recommend_treatment_package(result.skin_type, concerns),
+            }
+        )
+
+    def _median_result(self, results: list[AnalysisResponse]) -> AnalysisResponse:
+        skin_type = Counter(result.skin_type for result in results).most_common(1)[0][0]
+        concerns = self._median_concerns([result.concerns for result in results])
+        zones = []
+        zone_keys = [zone.key for zone in results[0].skin_zones]
+        for key in zone_keys:
+            samples = [next((zone for zone in result.skin_zones if zone.key == key), None) for result in results]
+            samples = [sample for sample in samples if sample is not None]
+            if not samples:
+                continue
+            zones.append(
+                SkinZone(
+                    key=key,
+                    label=samples[0].label,
+                    concerns=self._median_concerns([sample.concerns for sample in samples]),
+                    score=round(median(sample.score for sample in samples)),
+                    oiliness=round(median(sample.oiliness for sample in samples), 2),
+                    dark_spots=round(median(sample.dark_spots for sample in samples), 2),
+                    redness=round(median(sample.redness for sample in samples), 2),
+                    texture=round(median(sample.texture for sample in samples), 2),
+                    dryness=round(median(sample.dryness for sample in samples), 2),
+                    polygon=samples[0].polygon,
+                )
+            )
+
+        quality_order = {"good": 0, "medium": 1, "low": 2}
+        quality_source = max(
+            (result.scan_quality for result in results if result.scan_quality is not None),
+            key=lambda quality: quality_order.get(quality.level, 2),
+        )
+        quality = quality_source.model_copy(
+            update={
+                "brightness": round(median(result.scan_quality.brightness for result in results if result.scan_quality), 2),
+                "skin_coverage": round(median(result.scan_quality.skin_coverage for result in results if result.scan_quality), 2),
+                "face_centering": round(median(result.scan_quality.face_centering for result in results if result.scan_quality), 2),
+                "lighting_evenness": round(median(result.scan_quality.lighting_evenness for result in results if result.scan_quality), 2),
+                "sharpness": round(median(result.scan_quality.sharpness for result in results if result.scan_quality), 2),
+            }
+        )
+        severity_order = ["none", "mild", "moderate", "severe"]
+        severity = severity_order[round(median(severity_order.index(result.acne_severity) for result in results))]
+        return AnalysisResponse(
+            skin_type=skin_type,
+            skin_type_confidence=round(median(result.skin_type_confidence for result in results), 2),
+            concerns=concerns,
+            skin_zones=zones,
+            scan_quality=quality,
+            acne_severity=severity,
+            skin_health_score=round(median(result.skin_health_score for result in results)),
+            treatment_package=self._recommend_treatment_package(skin_type, concerns),
+        )
+
+    def _median_concerns(self, samples: list[list[Concern]]) -> list[Concern]:
+        names = sorted({concern.name for concerns in samples for concern in concerns})
+        severity_order = ["none", "mild", "moderate", "severe"]
+        combined = []
+        for name in names:
+            matches = [next((concern for concern in concerns if concern.name == name), None) for concerns in samples]
+            confidence = median(match.confidence if match else 0.0 for match in matches)
+            if confidence < self.calibration.stable_concern_floor:
+                continue
+            severities = [match.severity for match in matches if match]
+            severity = Counter(severities).most_common(1)[0][0] if severities else "mild"
+            if severity not in severity_order:
+                severity = "mild"
+            combined.append(Concern(name=name, confidence=round(confidence, 2), severity=severity))
+        return sorted(combined, key=lambda concern: concern.confidence, reverse=True)[:4]
 
     def _severity(self, confidence: float, fallback: str) -> str:
         if confidence >= 0.84:
@@ -531,6 +780,8 @@ class SkinVisionAnalyzer:
                 brightness=round(metrics.brightness, 2),
                 skin_coverage=round(metrics.skin_coverage, 2),
                 face_centering=round(metrics.face_centering, 2),
+                lighting_evenness=round(metrics.lighting_evenness, 2),
+                sharpness=round(metrics.sharpness, 2),
                 message="Face area is not clear enough. Retake with your full face inside the guide.",
             )
         if metrics.face_centering < 0.42:
@@ -539,7 +790,19 @@ class SkinVisionAnalyzer:
                 brightness=round(metrics.brightness, 2),
                 skin_coverage=round(metrics.skin_coverage, 2),
                 face_centering=round(metrics.face_centering, 2),
+                lighting_evenness=round(metrics.lighting_evenness, 2),
+                sharpness=round(metrics.sharpness, 2),
                 message="Face is turned, cropped, or off-center. Look straight and keep both cheeks inside the guide.",
+            )
+        if metrics.sharpness < 0.28:
+            return ScanQuality(
+                level="low",
+                brightness=round(metrics.brightness, 2),
+                skin_coverage=round(metrics.skin_coverage, 2),
+                face_centering=round(metrics.face_centering, 2),
+                lighting_evenness=round(metrics.lighting_evenness, 2),
+                sharpness=round(metrics.sharpness, 2),
+                message="The image is too soft or blurred for stable zone matching. Clean the lens, hold still, and retake.",
             )
         if metrics.brightness < 0.42:
             return ScanQuality(
@@ -547,6 +810,8 @@ class SkinVisionAnalyzer:
                 brightness=round(metrics.brightness, 2),
                 skin_coverage=round(metrics.skin_coverage, 2),
                 face_centering=round(metrics.face_centering, 2),
+                lighting_evenness=round(metrics.lighting_evenness, 2),
+                sharpness=round(metrics.sharpness, 2),
                 message="Lighting is too dark, so acne and spots may be over-read. Retake near a window or soft light.",
             )
         if metrics.brightness > 0.84 or metrics.highlight_ratio > 0.62:
@@ -555,6 +820,8 @@ class SkinVisionAnalyzer:
                 brightness=round(metrics.brightness, 2),
                 skin_coverage=round(metrics.skin_coverage, 2),
                 face_centering=round(metrics.face_centering, 2),
+                lighting_evenness=round(metrics.lighting_evenness, 2),
+                sharpness=round(metrics.sharpness, 2),
                 message="Lighting is too bright or shiny. Reduce glare for a more stable result.",
             )
         if metrics.lighting_evenness < 0.45:
@@ -563,6 +830,8 @@ class SkinVisionAnalyzer:
                 brightness=round(metrics.brightness, 2),
                 skin_coverage=round(metrics.skin_coverage, 2),
                 face_centering=round(metrics.face_centering, 2),
+                lighting_evenness=round(metrics.lighting_evenness, 2),
+                sharpness=round(metrics.sharpness, 2),
                 message="Lighting is uneven across the face. Face a soft light source directly before scanning.",
             )
         return ScanQuality(
@@ -570,6 +839,8 @@ class SkinVisionAnalyzer:
             brightness=round(metrics.brightness, 2),
             skin_coverage=round(metrics.skin_coverage, 2),
             face_centering=round(metrics.face_centering, 2),
+            lighting_evenness=round(metrics.lighting_evenness, 2),
+            sharpness=round(metrics.sharpness, 2),
             message="Lighting is good enough for routine guidance.",
         )
 
@@ -582,6 +853,8 @@ class SkinVisionAnalyzer:
             return 0.7
         if metrics.lighting_evenness < 0.45:
             return 0.76
+        if metrics.sharpness < 0.34:
+            return 0.7
         return 1.0
 
 

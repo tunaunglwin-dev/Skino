@@ -37,7 +37,7 @@ return [
 
     'skin_ai' => [
         'base_url' => env('SKIN_AI_SERVICE_URL', 'http://127.0.0.1:5000'),
-        'timeout' => env('SKIN_AI_SERVICE_TIMEOUT', 15),
+        'timeout' => env('SKIN_AI_SERVICE_TIMEOUT', 90),
     ],
 
     'gemini' => [

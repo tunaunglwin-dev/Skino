@@ -7,6 +7,11 @@ class Concern(BaseModel):
     severity: str
 
 
+class ZonePoint(BaseModel):
+    x: float = Field(ge=-0.15, le=1.15)
+    y: float = Field(ge=-0.15, le=1.15)
+
+
 class TreatmentPackage(BaseModel):
     key: str
     name: str
@@ -25,6 +30,7 @@ class SkinZone(BaseModel):
     redness: float = Field(ge=0, le=1)
     texture: float = Field(ge=0, le=1)
     dryness: float = Field(ge=0, le=1)
+    polygon: list[ZonePoint] = Field(default_factory=list)
 
 
 class ScanQuality(BaseModel):
@@ -32,6 +38,8 @@ class ScanQuality(BaseModel):
     brightness: float = Field(ge=0, le=1)
     skin_coverage: float = Field(ge=0, le=1)
     face_centering: float = Field(default=1.0, ge=0, le=1)
+    lighting_evenness: float = Field(default=1.0, ge=0, le=1)
+    sharpness: float = Field(default=1.0, ge=0, le=1)
     message: str
 
 

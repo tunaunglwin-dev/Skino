@@ -39,6 +39,7 @@ const history = ref([])
 const routine = ref(null)
 const result = ref(null)
 const capturedFile = ref(null)
+const capturedFrames = ref([])
 const previewUrl = ref('')
 const video = ref(null)
 const canvas = ref(null)
@@ -65,6 +66,7 @@ const captureProgress = ref(0)
 const captureQualityScore = ref(0)
 const captureMode = ref('single_upload')
 const capturingFrames = ref(false)
+const developerOverlay = ref(false)
 const analysisProgress = ref(0)
 const analysisStageIndex = ref(0)
 const retryingSection = ref('')
@@ -146,7 +148,6 @@ const todayProgress = computed(() => {
 })
 const canCapture = computed(() => (
   ['good', 'unavailable'].includes(faceGuide.value.state)
-  || (['off-center', 'tilted'].includes(faceGuide.value.state) && faceGuide.value.confidence >= 80)
 ))
 const canAnalyze = computed(() => Boolean(capturedFile.value && inputValidated.value))
 const routineCalendarDays = computed(() => routine.value?.week?.check_ins || [])
@@ -195,9 +196,32 @@ let lastDetectionAt = 0
 let lastLandmarkAt = 0
 let faceStableSince = 0
 const latestFaceLandmarks = ref([])
+const latestFacePose = ref(null)
 const MEDIAPIPE_WASM_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm'
 const FACE_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/latest/blaze_face_short_range.tflite'
 const FACE_LANDMARK_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task'
+const DEBUG_ZONE_POLYGONS = {
+  forehead: [127, 34, 139, 71, 68, 104, 69, 108, 10, 337, 299, 333, 298, 301, 368, 264, 356, 300, 293, 334, 296, 336, 107, 66, 105, 63, 70],
+  left_cheek: [50, 101, 205, 187, 123, 116, 111, 117, 118, 119, 100, 36, 206, 216, 212, 202],
+  right_cheek: [280, 330, 425, 411, 352, 345, 340, 346, 347, 348, 329, 266, 426, 436, 432, 422],
+  nose: [168, 6, 197, 195, 5, 4, 45, 220, 115, 48, 64, 98, 97, 2, 326, 327, 294, 278, 344, 440, 275],
+  chin: [61, 185, 40, 39, 37, 0, 267, 269, 270, 409, 291, 375, 321, 405, 314, 17, 84, 181, 91, 146],
+}
+const DEBUG_ZONE_COLORS = {
+  forehead: '#f59e0b', left_cheek: '#22c55e', right_cheek: '#38bdf8', nose: '#a78bfa', chin: '#fb7185',
+}
+const zoneOverlayPolygons = computed(() => Object.entries(DEBUG_ZONE_POLYGONS).map(([key, indices]) => {
+  const points = indices.map((index) => latestFaceLandmarks.value[index]).filter(Boolean)
+  const signal = latestResult.value?.skin_zones?.find((zone) => zone.key === key)
+  return {
+    key,
+    color: DEBUG_ZONE_COLORS[key],
+    points: points.map((point) => `${point.x * 100},${point.y * 100}`).join(' '),
+    x: points.length ? (points.reduce((sum, point) => sum + point.x, 0) / points.length) * 100 : 0,
+    y: points.length ? (points.reduce((sum, point) => sum + point.y, 0) / points.length) * 100 : 0,
+    signal,
+  }
+}).filter((zone) => zone.points))
 
 const specialistProfiles = [
   { name: 'Dr. May Thandar', role: 'Acne and sensitive skin', schedule: 'Mon, Wed, Fri', tone: 'bg-skino-orange-soft text-skino-orange-dark' },
@@ -506,6 +530,7 @@ async function ensureFaceLandmarker() {
     minFaceDetectionConfidence: 0.65,
     minFacePresenceConfidence: 0.65,
     minTrackingConfidence: 0.65,
+    outputFacialTransformationMatrixes: true,
   })
   landmarkerMode = 'IMAGE'
   return faceLandmarker
@@ -520,7 +545,27 @@ async function setLandmarkerMode(mode) {
   return landmarker
 }
 
-function assessFace(detectionResult, width, height) {
+function facePoseFromResult(landmarkResult) {
+  const matrix = landmarkResult?.facialTransformationMatrixes?.[0]
+  const values = Array.from(matrix?.data || matrix || [])
+  if (values.length < 16) return null
+  const toDegrees = (value) => value * (180 / Math.PI)
+  const pitch = toDegrees(Math.atan2(values[9], values[10]))
+  const yaw = toDegrees(Math.atan2(-values[8], Math.sqrt((values[9] ** 2) + (values[10] ** 2))))
+  const roll = toDegrees(Math.atan2(values[4], values[0]))
+  return { pitch: Number(pitch.toFixed(1)), yaw: Number(yaw.toFixed(1)), roll: Number(roll.toFixed(1)) }
+}
+
+function updateLandmarkState(landmarkResult, mirrorX = false) {
+  latestFaceLandmarks.value = (landmarkResult?.faceLandmarks?.[0] || []).map((point) => ({
+    x: Number((mirrorX ? 1 - point.x : point.x).toFixed(6)),
+    y: Number(point.y.toFixed(6)),
+    z: Number((point.z || 0).toFixed(6)),
+  }))
+  latestFacePose.value = facePoseFromResult(landmarkResult)
+}
+
+function assessFace(detectionResult, width, height, pose = latestFacePose.value) {
   const detections = detectionResult?.detections || []
   if (detections.length === 0) return { state: 'no-face', message: 'မျက်နှာ မတွေ့ပါ။ ကင်မရာကို တည့်တည့်ကြည့်ပြီး အလင်းရောင် ပြင်ပါ။', confidence: 0 }
   if (detections.length > 1) return { state: 'multiple', message: 'မျက်နှာညှိကွက်အတွင်း လူတစ်ယောက်တည်းသာ ရှိပါစေ။', confidence: 0 }
@@ -546,6 +591,9 @@ function assessFace(detectionResult, width, height) {
   if (eyes.length === 2 && Math.abs(Number(eyes[0].y) - Number(eyes[1].y)) > 0.065) {
     return { state: 'tilted', message: 'ခေါင်းကို တည့်တည့်ထားပြီး မျက်လုံးနှစ်ဖက် ညီအောင်ထားပါ။', confidence }
   }
+  if (pose && (Math.abs(pose.yaw) > 14 || Math.abs(pose.pitch) > 13 || Math.abs(pose.roll) > 10)) {
+    return { state: 'pose', message: 'မျက်နှာကို ကင်မရာဘက် တည့်တည့်လှည့်ပြီး ခေါင်းကို မငုံ့/မော့ဘဲထားပါ။', confidence }
+  }
   return { state: 'good', message: 'အဆင်သင့်ပါပြီ။ ခဏငြိမ်နေပြီး ဓာတ်ပုံရိုက်ပါ။', confidence }
 }
 
@@ -561,20 +609,14 @@ async function beginFaceGuidance() {
       if (video.value.readyState >= 2 && now - lastDetectionAt > 160) {
         lastDetectionAt = now
         try {
-          const assessment = assessFace(
-            detector.detectForVideo(video.value, now),
-            video.value.videoWidth,
-            video.value.videoHeight,
-          )
-          if (landmarker && assessment.confidence >= 65 && now - lastLandmarkAt > 320) {
+          const detectionResult = detector.detectForVideo(video.value, now)
+          const initialAssessment = assessFace(detectionResult, video.value.videoWidth, video.value.videoHeight)
+          if (landmarker && initialAssessment.confidence >= 65 && now - lastLandmarkAt > 320) {
             lastLandmarkAt = now
             const landmarkResult = landmarker.detectForVideo(video.value, now)
-            latestFaceLandmarks.value = (landmarkResult.faceLandmarks?.[0] || []).map((point) => ({
-              x: Number((1 - point.x).toFixed(6)),
-              y: Number(point.y.toFixed(6)),
-              z: Number((point.z || 0).toFixed(6)),
-            }))
+            updateLandmarkState(landmarkResult, true)
           }
+          const assessment = assessFace(detectionResult, video.value.videoWidth, video.value.videoHeight)
           if (assessment.state === 'good') {
             if (!faceStableSince) faceStableSince = now
             faceGuide.value = now - faceStableSince >= 320
@@ -605,21 +647,16 @@ async function validateUploadedFace(file) {
     try {
       await image.decode()
       const detector = await setDetectorMode('IMAGE')
-      faceGuide.value = assessFace(detector.detect(image), image.naturalWidth, image.naturalHeight)
-      inputValidated.value = faceGuide.value.state === 'good'
-      if (inputValidated.value) {
-        try {
-          const landmarker = await setLandmarkerMode('IMAGE')
-          const landmarkResult = landmarker.detect(image)
-          latestFaceLandmarks.value = (landmarkResult.faceLandmarks?.[0] || []).map((point) => ({
-            x: Number(point.x.toFixed(6)),
-            y: Number(point.y.toFixed(6)),
-            z: Number((point.z || 0).toFixed(6)),
-          }))
-        } catch {
-          latestFaceLandmarks.value = []
-        }
+      const detectionResult = detector.detect(image)
+      try {
+        const landmarker = await setLandmarkerMode('IMAGE')
+        updateLandmarkState(landmarker.detect(image))
+      } catch {
+        latestFaceLandmarks.value = []
+        latestFacePose.value = null
       }
+      faceGuide.value = assessFace(detectionResult, image.naturalWidth, image.naturalHeight)
+      inputValidated.value = faceGuide.value.state === 'good'
     } finally {
       URL.revokeObjectURL(image.src)
     }
@@ -633,6 +670,8 @@ async function startCamera() {
   error.value = ''
   inputValidated.value = false
   latestFaceLandmarks.value = []
+  latestFacePose.value = null
+  capturedFrames.value = []
   if (!cameraSupported.value) {
     error.value = 'ဤဝဘ်ဘရောက်ဇာတွင် ကင်မရာအသုံးပြု၍ မရပါ။ ဓာတ်ပုံတင်ပြီး ဆက်လုပ်ပါ။'
     return
@@ -740,14 +779,19 @@ async function captureFrame() {
     const best = candidates.sort((a, b) => b.quality - a.quality)[0]
     if (!best) throw new Error('No frame captured')
     captureQualityScore.value = best.quality
-    captureMode.value = 'multi_frame_best'
+    captureMode.value = 'multi_frame_median'
     latestFaceLandmarks.value = latestFaceLandmarks.value.map((point) => ({
       x: Number(Math.min(1.15, Math.max(-0.15, ((point.x * source.videoWidth) - x) / size)).toFixed(6)),
       y: Number(Math.min(1.15, Math.max(-0.15, ((point.y * source.videoHeight) - y) / size)).toFixed(6)),
       z: point.z,
     }))
-    replacePreview(new File([best.blob], `skino-multiframe-${Date.now()}.jpg`, { type: 'image/jpeg' }), true)
-    faceGuide.value = { state: 'good', message: `ပုံ ၃ ပုံအနက် ကြည်လင်မှုအကောင်းဆုံးပုံကို ရွေးပြီးပါပြီ · ${best.quality}%`, confidence: faceGuide.value.confidence }
+    capturedFrames.value = candidates.map((candidate, index) => new File(
+      [candidate.blob],
+      `skino-frame-${index + 1}-${Date.now()}.jpg`,
+      { type: 'image/jpeg' },
+    ))
+    replacePreview(capturedFrames.value[0], true)
+    faceGuide.value = { state: 'good', message: `ပုံ ၃ ပုံကို အလယ်တန်ဖိုးဖြင့် နှိုင်းယှဉ်ရန် အဆင်သင့်ပါပြီ · ${best.quality}%`, confidence: faceGuide.value.confidence }
     stopCamera()
   } catch {
     error.value = 'ပုံများကို ဆက်တိုက်ရိုက်ယူ၍ မရပါ။ ကင်မရာကို ပြန်ဖွင့်ပြီး စမ်းပါ။'
@@ -768,6 +812,7 @@ async function chooseFile(event) {
     return
   }
   replacePreview(file)
+  capturedFrames.value = []
   captureMode.value = 'single_upload'
   captureProgress.value = 1
   captureQualityScore.value = 0
@@ -783,6 +828,8 @@ function retake() {
   previewUrl.value = ''
   faceGuide.value = { state: 'idle', message: 'ကင်မရာဖွင့်ပြီး မျက်နှာတစ်ခုလုံးကို frame အတွင်းထားပါ။', confidence: 0 }
   latestFaceLandmarks.value = []
+  latestFacePose.value = null
+  capturedFrames.value = []
   captureProgress.value = 0
   captureQualityScore.value = 0
   captureMode.value = 'single_upload'
@@ -831,6 +878,7 @@ async function submitScan() {
       qualityScore: captureQualityScore.value,
       deviceCategory: deviceCategory(),
       landmarks: latestFaceLandmarks.value,
+      frames: capturedFrames.value.slice(1),
     }, analysisController.signal)
     stopAnalysisProgress()
     analysisStageIndex.value = analysisStages.length - 1
@@ -1081,7 +1129,7 @@ onUnmounted(() => {
           <div class="relative mx-auto grid h-[min(54svh,460px)] min-h-[290px] w-full place-items-center overflow-hidden rounded-2xl bg-[#111816] lg:h-auto lg:min-h-0">
             <video v-show="cameraActive" ref="video" class="absolute inset-0 size-full object-cover [transform:scaleX(-1)]" playsinline muted></video>
             <img v-if="previewUrl && !cameraActive" class="absolute inset-0 size-full bg-[#111816] object-contain" :src="previewUrl" alt="ရိုက်ထားသော မျက်နှာပုံ" />
-            <div v-if="!cameraActive && !previewUrl" class="grid place-items-center gap-3 px-8 text-center text-white"><img class="size-24 object-contain" :src="cameraMascot" alt="" /><strong class="text-base font-medium">စကင်လုပ်ရန် အဆင်သင့်ပါပြီ</strong><small class="max-w-sm text-[11px] leading-5 text-white/65">အလင်းရောင်ညီသော နေရာတွင် ဆံပင်ကို နဖူးမဖုံးအောင်ထားပြီး ကင်မရာကို တည့်တည့်ကြည့်ပါ။</small></div>
+            <div v-if="!cameraActive && !previewUrl" class="grid place-items-center gap-3 px-8 text-center text-white"><img class="size-24 object-contain" :src="cameraMascot" alt="" /><strong class="text-base font-medium">စကင်လုပ်ရန် အဆင်သင့်ပါပြီ</strong><small class="max-w-sm text-[11px] leading-5 text-white/65">အလင်းရောင်ညီသော နေရာတွင် ဆံပင်ကို နဖူးမဖုံးအောင်ထားပြီး ကင်မရာကို တည့်တည့်ကြည့်ပါ။</small><button class="mt-1 min-h-11 rounded-xl bg-skino-orange px-6 text-xs font-medium text-white shadow-lg" type="button" @click="startCamera">ကင်မရာ ဖွင့်မယ်</button></div>
 
             <div class="scan-face-guide pointer-events-none absolute inset-[9%_11%_13%] sm:inset-[9%_18%_13%]" :class="{ 'opacity-25': !cameraActive && !previewUrl, 'scan-guide-good': faceGuide.state === 'good' }">
               <span class="absolute left-0 top-0 size-16 rounded-tl-[42px] border-l-[3px] border-t-[3px]" :class="faceGuide.state === 'good' ? 'border-emerald-300' : 'border-white/80'"></span>
@@ -1091,15 +1139,19 @@ onUnmounted(() => {
               <span class="absolute left-1/2 top-1/2 h-0.5 w-16 -translate-x-1/2 rounded-full" :class="faceGuide.state === 'good' ? 'bg-emerald-300' : 'bg-white/70'"></span>
             </div>
 
-            <div v-if="cameraActive || previewUrl" class="absolute inset-x-3 bottom-3 flex items-center gap-2 rounded-xl border px-3 py-2.5 text-[11px] backdrop-blur-md" :class="faceGuide.state === 'good' ? 'border-emerald-400/40 bg-emerald-950/75 text-emerald-100' : faceGuide.state === 'loading' ? 'border-white/20 bg-black/65 text-white' : 'border-amber-300/40 bg-black/70 text-amber-100'"><span class="size-2 shrink-0 rounded-full" :class="faceGuide.state === 'good' ? 'bg-emerald-400' : faceGuide.state === 'loading' ? 'animate-pulse bg-white' : 'bg-amber-300'"></span><span class="flex-1">{{ faceGuide.message }}</span><b v-if="faceGuide.confidence" class="font-medium">{{ faceGuide.confidence }}%</b></div>
+            <svg v-if="developerOverlay && previewUrl && zoneOverlayPolygons.length" class="pointer-events-none absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Developer zone mask overlay">
+              <g v-for="zone in zoneOverlayPolygons" :key="zone.key"><polygon :points="zone.points" :fill="`${zone.color}38`" :stroke="zone.color" stroke-width="0.7" vector-effect="non-scaling-stroke" /><text :x="zone.x" :y="zone.y" fill="white" font-size="2.4" font-weight="700" text-anchor="middle" paint-order="stroke" stroke="#111" stroke-width="0.45">{{ zone.key }}{{ zone.signal ? ` ${zone.signal.score}` : '' }}</text></g>
+            </svg>
+
+            <div v-if="cameraActive || previewUrl" class="absolute inset-x-3 bottom-[68px] flex items-center gap-2 rounded-xl border px-3 py-2 text-[10px] backdrop-blur-md" :class="faceGuide.state === 'good' ? 'border-emerald-400/40 bg-emerald-950/75 text-emerald-100' : faceGuide.state === 'loading' ? 'border-white/20 bg-black/65 text-white' : 'border-amber-300/40 bg-black/70 text-amber-100'"><span class="size-2 shrink-0 rounded-full" :class="faceGuide.state === 'good' ? 'bg-emerald-400' : faceGuide.state === 'loading' ? 'animate-pulse bg-white' : 'bg-amber-300'"></span><span class="flex-1">{{ faceGuide.message }}</span><b v-if="faceGuide.confidence" class="font-medium">{{ faceGuide.confidence }}%</b></div>
             <div class="absolute left-3 top-3 flex items-center gap-1.5 rounded-full border border-white/15 bg-black/55 px-2.5 py-1.5 text-[9px] text-white/80 backdrop-blur-md"><span class="size-1.5 rounded-full bg-emerald-400"></span>Browser-only guidance</div>
             <div v-if="cameraActive" class="absolute right-3 top-3 flex items-center gap-1.5 rounded-full border border-white/20 bg-black/65 px-2.5 py-1.5 text-[9px] text-white backdrop-blur-md"><span class="mr-1">{{ capturingFrames ? 'ရိုက်နေသည်' : '3-frame' }}</span><i v-for="step in 3" :key="step" class="size-2 rounded-full transition" :class="captureProgress >= step ? 'bg-emerald-400 shadow-[0_0_0_3px_rgba(52,211,153,.16)]' : 'bg-white/30'"></i></div>
+            <button v-if="cameraActive" class="absolute inset-x-3 bottom-3 z-10 min-h-12 rounded-xl bg-skino-orange px-5 text-xs font-medium text-white shadow-[0_12px_30px_rgba(0,0,0,.35)] disabled:opacity-50" type="button" :disabled="!canCapture || capturingFrames" @click="captureFrame">{{ capturingFrames ? `ပုံရိုက်နေသည် ${captureProgress}/3` : canCapture ? 'ပုံ ၃ ပုံရိုက်ပြီး AI နှိုင်းယှဉ်မယ်' : 'မျက်နှာအနေအထားကို အရင်ပြင်ပါ' }}</button>
+            <button v-else-if="previewUrl && !loading" class="absolute inset-x-3 bottom-3 z-10 min-h-12 rounded-xl bg-skino-orange px-5 text-xs font-medium text-white shadow-[0_12px_30px_rgba(0,0,0,.35)] disabled:opacity-50" type="button" :disabled="!canAnalyze || !online" @click="submitScan">{{ canAnalyze ? 'အသားအရေ ရလဒ်ကြည့်မယ် →' : 'မှန်ကန်သော ဓာတ်ပုံ လိုအပ်သည်' }}</button>
             <canvas ref="canvas" hidden></canvas>
           </div>
 
           <div class="grid gap-2 pt-2 sm:grid-cols-2">
-            <button v-if="!cameraActive && !previewUrl" class="min-h-10 rounded-xl bg-skino-orange px-5 text-xs font-medium text-white shadow-skino-sm hover:bg-skino-orange-dark" type="button" @click="startCamera">ကင်မရာ ဖွင့်မယ်</button>
-            <button v-if="cameraActive" class="min-h-10 rounded-xl bg-skino-orange px-5 text-xs font-medium text-white hover:bg-skino-orange-dark disabled:opacity-40" type="button" :disabled="!canCapture || capturingFrames" @click="captureFrame">{{ capturingFrames ? `ပုံရိုက်နေသည် ${captureProgress}/3` : canCapture ? 'ပုံ ၃ ပုံရိုက်ပြီး အကောင်းဆုံးရွေးမယ်' : 'ခဏငြိမ်ပြီး အနေအထားပြင်ပါ' }}</button>
             <button v-if="previewUrl" class="min-h-10 rounded-xl border border-skino-line bg-white px-5 text-xs hover:border-skino-orange hover:text-skino-orange-dark" type="button" @click="retake">ပြန်ရိုက်မယ်</button>
             <label class="grid min-h-10 cursor-pointer place-items-center rounded-xl border border-skino-line bg-white px-5 text-xs hover:border-skino-orange hover:text-skino-orange-dark">ဓာတ်ပုံ ရွေးမယ်<input class="sr-only" type="file" accept="image/jpeg,image/png,image/webp" capture="user" @change="chooseFile" /></label>
           </div>
@@ -1108,9 +1160,10 @@ onUnmounted(() => {
         <aside class="grid min-h-0 content-start gap-2.5 rounded-2xl border border-skino-line bg-white p-4 shadow-skino-sm lg:overflow-y-auto">
           <div><p class="mb-1 text-[10px] text-skino-orange-dark">စကင် လမ်းညွှန်</p><h2 class="text-base font-medium">ပုံကြည်လင်စေရန် စစ်ဆေးပါ</h2></div>
           <div v-for="item in [['၁','မျက်နှာတစ်ခုတည်း','ညှိကွက်အတွင်း လူတစ်ယောက်တည်းထားပါ။'],['၂','အလယ်တွင် တည့်တည့်','မျက်နှာတစ်ခုလုံး မြင်ရပြီး ခေါင်းမစောင်းပါစေနှင့်။'],['၃','အလင်းရောင်ညီညာ','အရိပ်ပြင်းခြင်းနှင့် filter များကို ရှောင်ပါ။']]" :key="item[0]" class="grid grid-cols-[30px_1fr] gap-2 rounded-xl bg-skino-paper p-2.5"><span class="grid size-7 place-items-center rounded-full bg-white text-[10px] text-skino-orange">{{ item[0] }}</span><span class="grid gap-0.5"><strong class="text-[11px] font-medium">{{ item[1] }}</strong><small class="text-[9px] leading-4 text-skino-muted">{{ item[2] }}</small></span></div>
-          <div class="grid gap-1 rounded-xl border border-violet-200 bg-violet-50 p-3"><strong class="text-[12px] font-medium text-violet-800">Three-frame quality capture</strong><small class="text-[11px] leading-5 text-skino-muted">ပုံ ၃ ပုံထဲမှ အလင်းနှင့် ကြည်လင်မှုအကောင်းဆုံး တစ်ပုံကို analysis အတွက် ရွေးပါမည်။ ပုံသုံးပုံလုံးကို AI ဖြင့် နှိုင်းယှဉ်ခြင်း မဟုတ်ပါ။</small></div>
+          <div class="grid gap-1 rounded-xl border border-violet-200 bg-violet-50 p-3"><strong class="text-[12px] font-medium text-violet-800">Three-frame median analysis</strong><small class="text-[11px] leading-5 text-skino-muted">ပုံ ၃ ပုံလုံးကို AI ဖြင့် စစ်ပြီး zone နှင့် signal တစ်ခုချင်း၏ အလယ်တန်ဖိုးကို အသုံးပြုပါမည်။ ကင်မရာကွာခြားမှုနှင့် frame တစ်ခုတည်း၏ noise ကို လျှော့ချပေးသည်။</small></div>
+          <label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 p-3"><span class="grid gap-0.5"><strong class="text-[11px] font-medium text-sky-900">Developer zone overlay</strong><small class="text-[9px] leading-4 text-skino-muted">Mask နေရာနှင့် zone score ကို ပုံပေါ်တွင်ပြမည်</small></span><input v-model="developerOverlay" class="size-4 accent-sky-600" type="checkbox" /></label>
           <div class="grid gap-1 rounded-xl border border-emerald-200 bg-emerald-50 p-3"><strong class="text-[11px] font-medium">သင့်အချက်အလက်ကို ကာကွယ်ထားသည်</strong><small class="text-[10px] leading-4 text-skino-muted">ကင်မရာလမ်းညွှန်ကို ဝဘ်ဘရောက်ဇာအတွင်းတွင်သာ လုပ်ဆောင်သည်။</small></div>
-          <button v-if="loading" class="mt-1 min-h-11 w-full rounded-xl border border-red-200 bg-white px-4 text-xs font-medium text-red-700" type="button" @click="cancelAnalysis">စစ်ဆေးမှု ရပ်မယ်</button><button v-else class="mt-1 min-h-12 w-full rounded-xl bg-skino-orange px-4 text-xs font-medium text-white shadow-skino-sm hover:bg-skino-orange-dark disabled:cursor-not-allowed disabled:opacity-40" type="button" :disabled="!canAnalyze || !online" @click="submitScan">{{ !online ? 'အင်တာနက်ချိတ်ဆက်ပြီး ပြန်စမ်းပါ' : scanFailure && canAnalyze ? 'ဓာတ်ပုံမပျောက်ဘဲ ပြန်စမ်းမယ် →' : canAnalyze ? 'အသားအရေ ရလဒ်ကြည့်မယ် →' : 'မှန်ကန်သော ဓာတ်ပုံ အရင်ရိုက်ပါ' }}</button>
+          <button v-if="loading" class="mt-1 min-h-11 w-full rounded-xl border border-red-200 bg-white px-4 text-xs font-medium text-red-700" type="button" @click="cancelAnalysis">စစ်ဆေးမှု ရပ်မယ်</button><button v-else class="mt-1 hidden min-h-12 w-full rounded-xl bg-skino-orange px-4 text-xs font-medium text-white shadow-skino-sm hover:bg-skino-orange-dark disabled:cursor-not-allowed disabled:opacity-40 lg:block" type="button" :disabled="!canAnalyze || !online" @click="submitScan">{{ !online ? 'အင်တာနက်ချိတ်ဆက်ပြီး ပြန်စမ်းပါ' : scanFailure && canAnalyze ? 'ဓာတ်ပုံမပျောက်ဘဲ ပြန်စမ်းမယ် →' : canAnalyze ? 'အသားအရေ ရလဒ်ကြည့်မယ် →' : 'မှန်ကန်သော ဓာတ်ပုံ အရင်ရိုက်ပါ' }}</button>
         </aside>
       </div>
     </section>
@@ -1139,6 +1192,7 @@ onUnmounted(() => {
       <article class="overflow-hidden rounded-2xl border border-skino-line bg-white text-[#30231d] shadow-skino-sm">
         <button class="flex w-full items-center gap-3 p-4 text-left sm:p-5" type="button" :aria-expanded="skinMapOpen" @click="skinMapOpen = !skinMapOpen"><span class="grid size-11 place-items-center rounded-xl bg-emerald-50"><img class="size-9 object-contain" :src="progressIcon" alt="" /></span><span class="grid flex-1 gap-1"><strong class="text-base font-medium">မျက်နှာ အသားအရေမြေပုံ</strong><small class="text-[10px] leading-4 text-skino-muted">မျက်နှာ၏ ဘယ်နေရာတွင် ဘာအချက် ပိုမြင်ရသည်ကို ကြည့်ပါ</small></span><span class="grid size-9 place-items-center rounded-full bg-skino-paper text-lg text-skino-orange transition" :class="{ 'rotate-180': skinMapOpen }">⌄</span></button>
         <Transition name="skin-map"><div v-if="skinMapOpen" class="skin-map-panel grid gap-2 border-t border-skino-line p-4 sm:p-5">
+          <div v-if="developerOverlay && previewUrl && zoneOverlayPolygons.length" class="relative mx-auto mb-2 aspect-square w-full max-w-md overflow-hidden rounded-2xl bg-[#111816]"><img class="absolute inset-0 size-full object-contain" :src="previewUrl" alt="Zone developer preview" /><svg class="pointer-events-none absolute inset-0 size-full" viewBox="0 0 100 100" preserveAspectRatio="none"><g v-for="zone in zoneOverlayPolygons" :key="zone.key"><polygon :points="zone.points" :fill="`${zone.color}38`" :stroke="zone.color" stroke-width="0.7" vector-effect="non-scaling-stroke" /><text :x="zone.x" :y="zone.y" fill="white" font-size="2.4" font-weight="700" text-anchor="middle" paint-order="stroke" stroke="#111" stroke-width="0.45">{{ zone.key }}{{ zone.signal ? ` · ${zone.signal.score}` : '' }}</text></g></svg></div>
           <template v-if="latestResult.skin_zones?.length">
             <div v-for="zone in latestResult.skin_zones" :key="zone.key" class="overflow-hidden rounded-xl border border-skino-line bg-skino-paper">
               <button class="flex w-full items-center gap-3 p-3 text-left" type="button" @click="activeZoneKey = activeZoneKey === zone.key ? '' : zone.key"><span class="grid size-10 place-items-center rounded-xl bg-white text-xs font-medium" :class="zone.score >= 70 ? 'text-skino-green' : 'text-skino-orange-dark'">{{ zone.score }}</span><span class="grid flex-1 gap-1"><strong class="text-xs font-medium">{{ zoneNameMy(zone) }}</strong><small class="text-[9px] text-skino-muted">{{ zone.concerns?.length ? zone.concerns.map((item) => concernMy(item.name)).join('၊ ') : 'ထင်ရှားသော အချက် မရှိပါ' }}</small></span><span class="text-xs text-skino-muted">{{ activeZoneKey === zone.key ? 'ပိတ်မယ်' : 'အသေးစိတ်' }}</span></button>

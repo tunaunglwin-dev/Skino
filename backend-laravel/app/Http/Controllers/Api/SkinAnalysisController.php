@@ -24,7 +24,11 @@ class SkinAnalysisController extends Controller
         $image = $request->file('image');
 
         try {
-            $result = $skinAnalyzer->analyze($image, $request->validated('face_landmarks'));
+            $result = $skinAnalyzer->analyze(
+                $image,
+                $request->validated('face_landmarks'),
+                $request->file('frames', []),
+            );
         } catch (RuntimeException) {
             return response()->json([
                 'message' => 'Skin analysis service is unavailable.',
@@ -73,7 +77,11 @@ class SkinAnalysisController extends Controller
         $image = $request->file('image');
 
         try {
-            $result = $skinAnalyzer->analyze($image, $request->validated('face_landmarks'));
+            $result = $skinAnalyzer->analyze(
+                $image,
+                $request->validated('face_landmarks'),
+                $request->file('frames', []),
+            );
         } catch (RuntimeException) {
             return response()->json([
                 'message' => 'Skin analysis service is unavailable.',
